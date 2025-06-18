@@ -1,4 +1,3 @@
-
 import { useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -92,6 +91,27 @@ export function useChecklistEditorContext() {
 
   const { questionsByGroup, nonEmptyGroups } = useChecklistComputedProperties(questions, groups);
   
+  // Função utilitária para clonar perguntas (deep copy) e gerar novos IDs para perguntas novas
+  function cloneQuestionsWithNewIds(questions: ChecklistQuestion[]): ChecklistQuestion[] {
+    return questions.map(q => {
+      const isNew = q.id.startsWith('new-');
+      return {
+        ...q,
+        id: isNew ? `cloned-${Date.now()}-${Math.random().toString(36).substr(2, 6)}` : q.id,
+        // Se tiver subitens, clone recursivamente (se aplicável)
+        options: q.options ? [...q.options] : [],
+        // Adicione aqui outros campos que precisam ser copiados profundamente
+      };
+    });
+  }
+
+  // Exemplo de uso ao duplicar checklist:
+  const handleDuplicateChecklist = useCallback(() => {
+    const clonedQuestions = cloneQuestionsWithNewIds(questions);
+    // Use clonedQuestions ao criar o novo checklist
+    // ...existing code...
+  }, [questions /*, ...outros deps */]);
+
   return {
     ...state,
     id,

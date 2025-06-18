@@ -243,19 +243,15 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
       );
 
     case "multiple_choice":
+    case "multiple_select":
+    case "checkbox":
     case "checkboxes":
-    case "dropdown":
       return (
         <div className="space-y-4">
-          <EnhancedMultipleChoiceInput
+          <CheckboxesResponseInput
             question={question}
-            value={safeResponse.value || {}}
-            onChange={val =>
-              onResponseChange({
-                ...safeResponse,
-                value: val
-              })
-            }
+            response={safeResponse}
+            onResponseChange={onResponseChange}
             readOnly={readOnly}
           />
           {standardActionButtons}
@@ -316,6 +312,22 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
               dummyProp="UniqueKeyForProps20250615"
             />
           )}
+          {actionPlanDialog}
+        </div>
+      );
+
+    case "dropdown":
+      return (
+        <div className="space-y-4">
+          <DropdownResponseInput
+            question={question}
+            value={safeResponse.value}
+            onChange={val => onResponseChange({ ...safeResponse, value: val })}
+            readOnly={readOnly}
+          />
+          {standardActionButtons}
+          {mediaUploadInput}
+          {mediaAnalysisDialog}
           {actionPlanDialog}
         </div>
       );

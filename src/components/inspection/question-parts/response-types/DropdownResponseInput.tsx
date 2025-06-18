@@ -1,26 +1,32 @@
-
 import React from "react";
-import { DropdownInput } from "@/components/inspection/question-inputs/DropdownInput";
 
 interface DropdownResponseInputProps {
-  options: string[];
-  value: string | undefined;
-  onChange: (value: string) => void;
+  question: any;
+  value: string;
+  onChange: (val: string) => void;
   readOnly?: boolean;
 }
 
-export function DropdownResponseInput({ 
-  options, 
-  value, 
-  onChange, 
-  readOnly = false 
+export function DropdownResponseInput({
+  question,
+  value,
+  onChange,
+  readOnly = false
 }: DropdownResponseInputProps) {
+  const options = question.options || [];
   return (
-    <DropdownInput 
-      options={options}
-      value={value}
-      onChange={onChange}
-      readOnly={readOnly}
-    />
+    <select
+      className="border rounded px-3 py-2 w-full"
+      value={value || ""}
+      onChange={e => onChange(e.target.value)}
+      disabled={readOnly}
+    >
+      <option value="">Selecione...</option>
+      {options.map((option: string, idx: number) => (
+        <option key={idx} value={option}>
+          {option}
+        </option>
+      ))}
+    </select>
   );
 }

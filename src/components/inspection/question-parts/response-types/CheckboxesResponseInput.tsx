@@ -1,49 +1,51 @@
-
 import React from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface CheckboxesResponseInputProps {
-  options: string[];
-  value: string[] | undefined;
-  onChange: (value: string[]) => void;
+  question: {
+    options: string[];
+  };
+  response: {
+    value: string[];
+  };
+  onResponseChange: (response: { value: string[] }) => void;
   readOnly?: boolean;
 }
 
 export function CheckboxesResponseInput({ 
-  options, 
-  value = [], 
-  onChange, 
+  question, 
+  response, 
+  onResponseChange, 
   readOnly = false 
 }: CheckboxesResponseInputProps) {
-  const currentValue = Array.isArray(value) ? value : [];
+  const options = question.options || [];
+  const value = Array.isArray(response?.value) ? response.value : [];
 
-  const handleToggleOption = (option: string) => {
-    if (readOnly) return;
-    
-    const newValue = currentValue.includes(option)
-      ? currentValue.filter(item => item !== option)
-      : [...currentValue, option];
-    
-    onChange(newValue);
+  const handleChange = (option: string, checked: boolean) => {
+    let newValue = [...value];
+    if (checked) {
+      newValue.push(option);
+    } else {
+      newValue = newValue.filter((v) => v !== option);
+    }
+    onResponseChange({ ...response, value: newValue });
   };
 
   return (
-    <div className="space-y-2">
-      {options.map((option, index) => (
-        <div key={index} className="flex items-center space-x-2">
-          <Checkbox
-            id={`checkbox-${index}`}
-            checked={currentValue.includes(option)}
-            onCheckedChange={() => handleToggleOption(option)}
+    <div className="flex flex-col gap-2">
+      {options.length === 0 && (
+        <div className="text-xs text-red-600">Nenhuma opção configurada.</div>
+      )}
+      {options.map((option, idx) => (
+        <label key={idx} className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={value.includes(option)}
+            onChange={e => handleChange(option, e.target.checked)}
             disabled={readOnly}
           />
-          <label 
-            htmlFor={`checkbox-${index}`}
-            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-          >
-            {option}
-          </label>
-        </div>
+          {option}
+        </label>
       ))}
     </div>
   );
