@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -36,10 +37,9 @@ export function QuestionItem({ index, question, onRemove, onChange }: QuestionIt
   const frontendType = convertToFrontendType(question.type);
 
   const handleResponseTypeChange = (frontendType: StandardResponseType) => {
-    // Enviar o código interno em inglês para o backend
-    const dbType = convertToDatabaseType(frontendType);
-    console.log(`QuestionItem: Enviando tipo para backend: ${frontendType} -> ${dbType}`);
-    onChange(index, "type", dbType);
+    // Manter o código em inglês internamente no frontend
+    console.log(`QuestionItem: Mantendo tipo frontend: ${frontendType}`);
+    onChange(index, "type", frontendType);
   };
 
   return (
