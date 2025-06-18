@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -460,7 +461,7 @@ export function QuestionItem({
                       parentId={question.id}
                     />
                   ))
-                }
+                )}
               </div>
             </div>
           </CollapsibleContent>
