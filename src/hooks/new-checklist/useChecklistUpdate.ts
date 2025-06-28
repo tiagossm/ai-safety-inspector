@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { toast } from "sonner";
-import { frontendToDatabaseResponseType } from "@/utils/responseTypeMap";
+import { frontendToDatabaseResponseType, normalizeToStandardType } from "@/types/responseTypes";
 
 interface ChecklistUpdateParams extends Partial<ChecklistWithStats> {
   id: string;
@@ -101,7 +101,10 @@ export function useChecklistUpdate() {
             }
 
             const options = Array.isArray(q.options) ? q.options.map((opt) => String(opt)) : [];
-            const dbResponseType = frontendToDatabaseResponseType(q.responseType);
+            
+            // CORREÇÃO CRÍTICA: Sempre normalizar para inglês antes de converter para português
+            const normalizedFrontendType = normalizeToStandardType(q.responseType);
+            const dbResponseType = frontendToDatabaseResponseType(normalizedFrontendType);
 
             // Converter DisplayCondition para JSON compatível com Supabase
             let displayCondition = null;
@@ -115,7 +118,7 @@ export function useChecklistUpdate() {
               } as Record<string, any>;
             }
 
-            console.log(`Mapping question ${index}: ${q.responseType} -> ${dbResponseType}`);
+            console.log(`useChecklistUpdate: Mapeando pergunta ${index}: ${q.responseType} -> ${normalizedFrontendType} -> ${dbResponseType}`);
 
             return {
               checklist_id: id,
@@ -162,7 +165,9 @@ export function useChecklistUpdate() {
             ? question.options.map((opt) => String(opt))
             : [];
             
-          const dbResponseType = frontendToDatabaseResponseType(question.responseType);
+          // CORREÇÃO CRÍTICA: Sempre normalizar para inglês antes de converter para português
+          const normalizedFrontendType = normalizeToStandardType(question.responseType);
+          const dbResponseType = frontendToDatabaseResponseType(normalizedFrontendType);
 
           // Converter DisplayCondition para JSON compatível com Supabase
           let displayCondition = null;
@@ -176,7 +181,7 @@ export function useChecklistUpdate() {
             } as Record<string, any>;
           }
 
-          console.log(`Updating question: ${question.responseType} -> ${dbResponseType}`);
+          console.log(`useChecklistUpdate: Atualizando pergunta: ${question.responseType} -> ${normalizedFrontendType} -> ${dbResponseType}`);
 
           const { error: updateError } = await supabase
             .from("checklist_itens")

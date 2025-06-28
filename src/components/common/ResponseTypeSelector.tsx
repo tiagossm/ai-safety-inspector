@@ -9,7 +9,7 @@ interface ResponseTypeSelectorProps {
   showDescriptions?: boolean;
 }
 
-// Array padronizado com values em inglês e labels em português
+// Array padronizado com values SEMPRE em inglês e labels em português
 const RESPONSE_TYPES = [
   { value: "text", label: "Texto", description: "Resposta em texto livre" },
   { value: "paragraph", label: "Parágrafo", description: "Texto longo com múltiplas linhas" },
@@ -28,9 +28,20 @@ const RESPONSE_TYPES = [
 export function ResponseTypeSelector({ value, onChange, showDescriptions = false }: ResponseTypeSelectorProps) {
   const selectedOption = RESPONSE_TYPES.find(option => option.value === value);
   
+  const handleValueChange = (newValue: string) => {
+    // Garantir que apenas valores válidos sejam aceitos
+    const validOption = RESPONSE_TYPES.find(option => option.value === newValue);
+    if (validOption) {
+      console.log(`ResponseTypeSelector: Alterando de ${value} para ${newValue}`);
+      onChange(validOption.value);
+    } else {
+      console.warn(`ResponseTypeSelector: Valor inválido rejeitado: ${newValue}`);
+    }
+  };
+  
   return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger>
+    <Select value={value} onValueChange={handleValueChange}>
+      <SelectTrigger className="h-9">
         <SelectValue placeholder="Selecione o tipo de resposta">
           {selectedOption?.label || "Selecione o tipo de resposta"}
         </SelectValue>

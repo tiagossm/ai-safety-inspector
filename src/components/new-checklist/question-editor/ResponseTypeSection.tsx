@@ -2,7 +2,7 @@
 import React from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { ResponseTypeSelector } from "@/components/common/ResponseTypeSelector";
-import { StandardResponseType } from "@/types/responseTypes";
+import { StandardResponseType, normalizeToStandardType } from "@/types/responseTypes";
 
 interface ResponseTypeSectionProps {
   question: ChecklistQuestion;
@@ -13,18 +13,18 @@ export function ResponseTypeSection({
   question,
   onUpdate
 }: ResponseTypeSectionProps) {
-  // Garantir que sempre temos um tipo válido (valor em inglês)
-  const currentResponseType = question.responseType || "yes_no";
+  // Garantir que sempre temos um tipo válido em inglês
+  const currentResponseType = normalizeToStandardType(question.responseType || "yes_no");
   
   const handleResponseTypeChange = (newType: StandardResponseType) => {
     // Só dispara update quando realmente há mudança
     if (newType !== currentResponseType) {
-      console.log("Alterando tipo de resposta de", currentResponseType, "para", newType);
+      console.log("ResponseTypeSection: Alterando tipo de resposta de", currentResponseType, "para", newType);
       
       // Criar um novo objeto para garantir que o React detecte a mudança
       const updatedQuestion: ChecklistQuestion = { 
         ...question, 
-        responseType: newType 
+        responseType: newType // Sempre em inglês
       };
       
       // Se o novo tipo não requer opções, limpar as opções existentes
@@ -37,7 +37,7 @@ export function ResponseTypeSection({
         updatedQuestion.options = ["Opção 1", "Opção 2"];
       }
       
-      console.log("Pergunta atualizada:", updatedQuestion);
+      console.log("ResponseTypeSection: Pergunta atualizada:", updatedQuestion);
       onUpdate(updatedQuestion);
     }
   };

@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -7,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Trash2 } from "lucide-react";
 import { ResponseTypeSelector } from "@/components/common/ResponseTypeSelector";
-import { StandardResponseType } from "@/types/responseTypes";
+import { StandardResponseType, normalizeToStandardType } from "@/types/responseTypes";
 
 interface QuestionItemProps {
   index: number;
@@ -29,10 +28,13 @@ interface QuestionItemProps {
 }
 
 export function QuestionItem({ index, question, onRemove, onChange }: QuestionItemProps) {
+  // Normalizar o tipo para garantir consistência
+  const normalizedType = normalizeToStandardType(question.type);
+  
   const handleResponseTypeChange = (newType: StandardResponseType) => {
     // Só dispara onChange quando o usuário realmente altera o tipo
-    if (newType !== question.type) {
-      console.log(`QuestionItem: Alterando tipo de ${question.type} para ${newType}`);
+    if (newType !== normalizedType) {
+      console.log(`QuestionItem: Alterando tipo de ${normalizedType} para ${newType}`);
       onChange(index, "type", newType);
     }
   };
@@ -63,7 +65,7 @@ export function QuestionItem({ index, question, onRemove, onChange }: QuestionIt
             <div>
               <Label htmlFor={`type-${index}`}>Tipo de Resposta</Label>
               <ResponseTypeSelector
-                value={question.type as StandardResponseType}
+                value={normalizedType}
                 onChange={handleResponseTypeChange}
                 showDescriptions={true}
               />

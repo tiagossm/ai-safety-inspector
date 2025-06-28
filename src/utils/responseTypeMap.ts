@@ -2,17 +2,20 @@
 import { 
   convertToFrontendType, 
   frontendToDatabaseResponseType,
-  RESPONSE_TYPE_MAP 
+  RESPONSE_TYPE_MAP,
+  normalizeToStandardType
 } from "@/types/responseTypes";
 
 // Re-exportar as funções principais para manter compatibilidade
 export { 
   convertToFrontendType, 
   frontendToDatabaseResponseType,
-  RESPONSE_TYPE_MAP 
+  RESPONSE_TYPE_MAP,
+  normalizeToStandardType
 };
 
 // Função adicional para compatibilidade com código existente
 export function convertToDatabaseType(frontendType: string): string {
-  return frontendToDatabaseResponseType(frontendType as any);
+  const normalized = normalizeToStandardType(frontendType);
+  return frontendToDatabaseResponseType(normalized);
 }
