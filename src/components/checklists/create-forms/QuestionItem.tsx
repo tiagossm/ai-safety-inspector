@@ -6,7 +6,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Trash2 } from "lucide-react";
 import { ResponseTypeSelector } from "@/components/common/ResponseTypeSelector";
-import { StandardResponseType, normalizeToStandardType } from "@/types/responseTypes";
+import { 
+  StandardResponseType,
+  convertToDatabaseType,
+  convertToFrontendType
+} from "@/types/responseTypes";
 
 interface QuestionItemProps {
   index: number;
@@ -28,15 +32,14 @@ interface QuestionItemProps {
 }
 
 export function QuestionItem({ index, question, onRemove, onChange }: QuestionItemProps) {
-  // Normalizar o tipo para garantir consistência
-  const normalizedType = normalizeToStandardType(question.type);
-  
-  const handleResponseTypeChange = (newType: StandardResponseType) => {
-    // Só dispara onChange quando o usuário realmente altera o tipo
-    if (newType !== normalizedType) {
-      console.log(`QuestionItem: Alterando tipo de ${normalizedType} para ${newType}`);
-      onChange(index, "type", newType);
-    }
+  // Converte o tipo do banco para o frontend para exibição
+  const frontendType = convertToFrontendType(question.type);
+
+  const handleResponseTypeChange = (frontendType: StandardResponseType) => {
+    // Enviar o código interno em inglês para o backend
+    const dbType = convertToDatabaseType(frontendType);
+    console.log(`QuestionItem: Enviando tipo para backend: ${frontendType} -> ${dbType}`);
+    onChange(index, "type", dbType);
   };
 
   return (
@@ -65,7 +68,7 @@ export function QuestionItem({ index, question, onRemove, onChange }: QuestionIt
             <div>
               <Label htmlFor={`type-${index}`}>Tipo de Resposta</Label>
               <ResponseTypeSelector
-                value={normalizedType}
+                value={frontendType}
                 onChange={handleResponseTypeChange}
                 showDescriptions={true}
               />

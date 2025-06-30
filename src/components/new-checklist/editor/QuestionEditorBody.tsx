@@ -4,7 +4,7 @@ import { ChecklistQuestion } from "@/types/newChecklist";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { ResponseTypeSelector } from "@/components/common/ResponseTypeSelector";
+import { ResponseTypeSelector } from "./ResponseTypeSelector";
 import { AdvancedOptionsEditor } from "./AdvancedOptionsEditor";
 
 interface QuestionEditorBodyProps {

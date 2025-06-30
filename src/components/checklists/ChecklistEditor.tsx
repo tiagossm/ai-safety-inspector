@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { NewChecklist, Checklist } from "@/types/checklist";
@@ -13,44 +12,26 @@ import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist";
 import { GroupedQuestionsSection } from "./create-forms/GroupedQuestionsSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// Tipos permitidos no banco - usar códigos em inglês
-const ALLOWED_RESPONSE_TYPES = ['yes_no', 'text', 'multiple_choice', 'numeric', 'photo', 'signature'];
+const ALLOWED_RESPONSE_TYPES = ['sim/não', 'texto', 'seleção múltipla', 'numérico', 'foto', 'assinatura'];
 
-// Função corrigida para usar códigos em inglês
 const normalizeResponseType = (type: string): string => {
   const typeMap: Record<string, string> = {
-    // Mapeamento de tipos em português para inglês
-    'sim/não': 'yes_no',
-    'seleção múltipla': 'multiple_choice',
-    'múltipla escolha': 'multiple_choice',
-    'texto': 'text',
-    'parágrafo': 'text',
-    'numérico': 'numeric',
-    'foto': 'photo',
-    'assinatura': 'signature',
-    'lista suspensa': 'dropdown',
-    'dropdown': 'dropdown',
-    'caixas de seleção': 'checkboxes',
-    'checkboxes': 'checkboxes',
-    'data': 'date',
-    'hora': 'time',
-    'data e hora': 'datetime',
-    // Manter códigos em inglês (casos já corretos)
-    'yes_no': 'yes_no',
-    'multiple_choice': 'multiple_choice',
-    'text': 'text',
-    'paragraph': 'text',
-    'numeric': 'numeric',
-    'photo': 'photo',
-    'signature': 'signature',
-    'date': 'date',
-    'time': 'time',
-    'datetime': 'datetime'
+    'sim/não': 'sim/não',
+    'múltipla escolha': 'seleção múltipla',
+    'numérico': 'numérico',
+    'texto': 'texto',
+    'foto': 'foto',
+    'assinatura': 'assinatura',
+    'yes_no': 'sim/não',
+    'multiple_choice': 'seleção múltipla',
+    'numeric': 'numérico',
+    'text': 'texto',
+    'photo': 'foto',
+    'signature': 'assinatura'
   };
 
-  const normalizedType = typeMap[type.toLowerCase()] || 'text';
-  console.log(`Normalizing response type from "${type}" to "${normalizedType}"`);
-  return normalizedType;
+  console.log(`Normalizing response type from "${type}" to "${typeMap[type] || 'texto'}"`);
+  return typeMap[type] || 'texto';
 };
 
 interface ChecklistEditorProps {
@@ -118,7 +99,7 @@ export function ChecklistEditor({
   const [questions, setQuestions] = useState<Question[]>(
     initialQuestions.map(q => ({
       text: q.text || "",
-      type: q.type || "yes_no", // Usar código em inglês por padrão
+      type: q.type || "sim/não",
       required: q.required !== undefined ? q.required : true,
       allowPhoto: q.allowPhoto || false,
       allowVideo: q.allowVideo || false,
@@ -137,7 +118,7 @@ export function ChecklistEditor({
           ...g,
           questions: g.questions.map(q => ({
             text: q.text || "",
-            type: q.type || "yes_no", // Usar código em inglês por padrão
+            type: q.type || "sim/não",
             required: q.required !== undefined ? q.required : true,
             allowPhoto: q.allowPhoto || false,
             allowVideo: q.allowVideo || false,
@@ -207,7 +188,7 @@ export function ChecklistEditor({
       ...questions,
       {
         text: "",
-        type: "yes_no", // Usar código em inglês por padrão
+        type: "sim/não",
         required: true,
         allowPhoto: false,
         allowVideo: false,
@@ -319,29 +300,12 @@ export function ChecklistEditor({
         const questionDataArray = questionsToSave
           .filter(q => q.text.trim())
           .map((q, i) => {
-            const normalizedType = normalizeResponseType(q.type);
+            const dbType = normalizeResponseType(q.type);
             
-            // Converter códigos em inglês para português para o banco de dados
-            const typeMapToPortuguese: Record<string, string> = {
-              'yes_no': 'sim/não',
-              'multiple_choice': 'seleção múltipla',
-              'text': 'texto',
-              'numeric': 'numérico',
-              'photo': 'foto',
-              'signature': 'assinatura',
-              'dropdown': 'lista suspensa',
-              'checkboxes': 'caixas de seleção',
-              'date': 'data',
-              'time': 'hora',
-              'datetime': 'data e hora'
-            };
-            
-            const dbType = typeMapToPortuguese[normalizedType] || 'texto';
-            
-            if (!['sim/não', 'texto', 'seleção múltipla', 'numérico', 'foto', 'assinatura'].includes(dbType)) {
-              console.error(`Invalid question type for database: ${dbType}`);
-              toast.warning(`Tipo de pergunta inválido: "${dbType}" para pergunta "${q.text}"`);
-              return null;
+            if (!ALLOWED_RESPONSE_TYPES.includes(dbType)) {
+              console.error(`Invalid question type after normalization: ${dbType}`);
+              toast.warning(`Tipo de pergunta inválido após normalização: "${dbType}" para pergunta "${q.text}"`);
+              q.type = 'texto';
             }
             
             if (dbType === "seleção múltipla" && (!q.options || !Array.isArray(q.options) || q.options.length === 0)) {
@@ -371,7 +335,7 @@ export function ChecklistEditor({
             
             const finalHint = q.hint || groupMetadata;
             
-            console.log(`Preparing question ${i}: "${q.text}" (${normalizedType} -> ${dbType})`);
+            console.log(`Preparing question ${i}: "${q.text}" (${dbType})`);
             
             return {
               checklist_id: newChecklistId,
@@ -388,8 +352,7 @@ export function ChecklistEditor({
               parent_item_id: q.parentId || null,
               condition_value: q.conditionValue || null
             };
-          })
-          .filter(q => q !== null);
+          });
         
         console.log(`Prepared ${questionDataArray.length} questions for insertion`);
         

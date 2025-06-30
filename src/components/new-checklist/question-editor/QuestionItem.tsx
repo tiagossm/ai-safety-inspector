@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -60,6 +60,27 @@ export function QuestionItem({
       });
     }
   }, [enableAllMedia, question, onUpdate]);
+
+  // Sincroniza as opções de mídia com enableAllMedia
+  useEffect(() => {
+    if (onUpdate) {
+      if (
+        question.allowsPhoto !== enableAllMedia ||
+        question.allowsVideo !== enableAllMedia ||
+        question.allowsAudio !== enableAllMedia ||
+        question.allowsFiles !== enableAllMedia
+      ) {
+        onUpdate({
+          ...question,
+          allowsPhoto: enableAllMedia,
+          allowsVideo: enableAllMedia,
+          allowsAudio: enableAllMedia,
+          allowsFiles: enableAllMedia,
+        });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enableAllMedia]);
 
   // Handler to update a question field
   const handleChange = (field: keyof ChecklistQuestion, value: any) => {
@@ -157,18 +178,13 @@ export function QuestionItem({
     toast.success(`${subitemsToAdd.length} subitens gerados com sucesso`);
   };
 
-  // RESPONSE_TYPES usando códigos internos em inglês (valores) com labels em português
-  const RESPONSE_TYPES = [
+  const responseTypeOptions = [
+    { value: "yes_no", label: "Sim/Não" },
     { value: "text", label: "Texto" },
+    { value: "multiple_choice", label: "Múltipla Escolha" },
     { value: "numeric", label: "Numérico" },
-    { value: "yes_no", label: "Sim / Não" },
-    { value: "dropdown", label: "Lista Suspensa" },
-    { value: "multiple_choice", label: "Seleção Múltipla" },
-    { value: "checkboxes", label: "Caixas de Seleção" },
-    { value: "date", label: "Data" },
-    { value: "time", label: "Hora" },
-    { value: "datetime", label: "Data e Hora" },
-    { value: "paragraph", label: "Parágrafo" },
+    { value: "photo", label: "Foto" },
+    { value: "signature", label: "Assinatura" }
   ];
 
   return (
@@ -224,7 +240,7 @@ export function QuestionItem({
                     <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
                   <SelectContent>
-                    {RESPONSE_TYPES.map((option) => (
+                    {responseTypeOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
                       </SelectItem>
