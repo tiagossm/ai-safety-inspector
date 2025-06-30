@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Plus, Save } from "lucide-react";
+import { ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useChecklistCreate } from "@/hooks/new-checklist/useChecklistCreate";
 import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
@@ -163,9 +163,9 @@ export default function NewChecklistCreate() {
   };
   
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex items-center gap-4 mb-6">
           <Button 
             variant="ghost"
             size="icon"
@@ -175,24 +175,38 @@ export default function NewChecklistCreate() {
           </Button>
           <h1 className="text-2xl font-bold">Criar Novo Checklist</h1>
         </div>
-      </div>
-      
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">
-                    Título <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="title"
-                    value={checklist.title}
-                    onChange={(e) => setChecklist({ ...checklist, title: e.target.value })}
-                    placeholder="Digite o título do checklist"
-                    required
-                  />
+        
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="space-y-6">
+                {/* Informações Básicas */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="title">
+                      Título <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="title"
+                      value={checklist.title}
+                      onChange={(e) => setChecklist({ ...checklist, title: e.target.value })}
+                      placeholder="Digite o título do checklist"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="category">
+                      Categoria <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="category"
+                      value={checklist.category || ""}
+                      onChange={(e) => setChecklist({ ...checklist, category: e.target.value })}
+                      placeholder="Ex: NR-35, Inspeção de Equipamentos"
+                      required
+                    />
+                  </div>
                 </div>
                 
                 <div className="space-y-2">
@@ -205,71 +219,74 @@ export default function NewChecklistCreate() {
                     className="min-h-[100px]"
                   />
                 </div>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="category">
-                    Categoria <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="category"
-                    value={checklist.category || ""}
-                    onChange={(e) => setChecklist({ ...checklist, category: e.target.value })}
-                    placeholder="Ex: NR-35, Inspeção de Equipamentos"
-                    required
-                  />
-                </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="company">Empresa</Label>
-                  <Select
-                    value={checklist.company_id?.toString() || ""}
-                    onValueChange={(value) =>
-                      setChecklist({
-                        ...checklist,
-                        company_id: value === "__none" ? undefined : value
-                      })
-                    }
-                  >
-                    <SelectTrigger id="company">
-                      <SelectValue placeholder="Selecione uma empresa" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none">Nenhuma</SelectItem>
-                      {loadingCompanies ? (
-                        <SelectItem value="__loading" disabled>
-                          Carregando empresas...
-                        </SelectItem>
-                      ) : (
-                        companies.map((company) => (
-                          <SelectItem key={company.id} value={company.id}>
-                            {company.fantasy_name || "Empresa sem nome"}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="company">Empresa</Label>
+                    <Select
+                      value={checklist.company_id?.toString() || ""}
+                      onValueChange={(value) =>
+                        setChecklist({
+                          ...checklist,
+                          company_id: value === "__none" ? undefined : value
+                        })
+                      }
+                    >
+                      <SelectTrigger id="company">
+                        <SelectValue placeholder="Selecione uma empresa" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none">Nenhuma</SelectItem>
+                        {loadingCompanies ? (
+                          <SelectItem value="__loading" disabled>
+                            Carregando empresas...
                           </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="template"
-                    checked={checklist.is_template || false}
-                    onCheckedChange={(checked) => setChecklist({ ...checklist, is_template: checked })}
-                  />
-                  <Label htmlFor="template">Salvar como template</Label>
+                        ) : (
+                          companies.map((company) => (
+                            <SelectItem key={company.id} value={company.id}>
+                              {company.fantasy_name || "Empresa sem nome"}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="flex items-center justify-end space-x-2">
+                    <Switch
+                      id="template"
+                      checked={checklist.is_template || false}
+                      onCheckedChange={(checked) => setChecklist({ ...checklist, is_template: checked })}
+                    />
+                    <Label htmlFor="template">Salvar como template</Label>
+                  </div>
                 </div>
               </div>
-            </div>
-            
-            <div className="mt-6 border-t pt-6">
+            </CardContent>
+          </Card>
+          
+          {/* Seção de Perguntas */}
+          <Card>
+            <CardContent className="pt-6">
               <h3 className="text-lg font-medium mb-4">Perguntas</h3>
               
               <div className="space-y-4">
-                {questions.map((question) => (
-                  <div key={question.id} className="border rounded-md p-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {questions.map((question, index) => (
+                  <div key={question.id} className="border rounded-lg p-4 bg-white">
+                    <div className="flex items-center justify-between mb-4">
+                      <Label className="text-sm font-medium">Pergunta {index + 1}</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveQuestion(question.id)}
+                        disabled={questions.length <= 1}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    <div className="space-y-4">
                       <div className="space-y-2">
                         <Label>Pergunta</Label>
                         <Input
@@ -279,34 +296,47 @@ export default function NewChecklistCreate() {
                         />
                       </div>
                       
-                      <div className="flex items-center justify-between">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label>Tipo de resposta</Label>
-                          <select
+                          <Select
                             value={question.responseType}
-                            onChange={(e) => handleUpdateQuestion({ 
+                            onValueChange={(value) => handleUpdateQuestion({ 
                               ...question, 
-                              responseType: e.target.value as ChecklistQuestion["responseType"]
+                              responseType: value as ChecklistQuestion["responseType"]
                             })}
-                            className="w-full border rounded p-2"
                           >
-                            <option value="yes_no">Sim/Não</option>
-                            <option value="multiple_choice">Múltipla escolha</option>
-                            <option value="text">Texto</option>
-                            <option value="numeric">Numérico</option>
-                            <option value="photo">Foto</option>
-                            <option value="signature">Assinatura</option>
-                          </select>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="yes_no">Sim/Não</SelectItem>
+                              <SelectItem value="multiple_choice">Múltipla escolha</SelectItem>
+                              <SelectItem value="text">Texto</SelectItem>
+                              <SelectItem value="numeric">Numérico</SelectItem>
+                              <SelectItem value="photo">Foto</SelectItem>
+                              <SelectItem value="signature">Assinatura</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                         
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveQuestion(question.id)}
-                        >
-                          Remover
-                        </Button>
+                        <div className="flex items-center space-x-4">
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              checked={question.isRequired}
+                              onCheckedChange={(checked) => handleUpdateQuestion({ ...question, isRequired: checked })}
+                            />
+                            <Label className="text-sm">Obrigatório</Label>
+                          </div>
+                          
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              checked={question.allowsPhoto}
+                              onCheckedChange={(checked) => handleUpdateQuestion({ ...question, allowsPhoto: checked })}
+                            />
+                            <Label className="text-sm">Foto</Label>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -322,34 +352,34 @@ export default function NewChecklistCreate() {
                   Adicionar pergunta
                 </Button>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <div className="flex justify-end gap-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => navigate("/new-checklists")}
-          >
-            Cancelar
-          </Button>
+            </CardContent>
+          </Card>
           
-          <Button
-            type="submit"
-            disabled={isSubmitting || !checklist.title || !checklist.category || (questions.length <= 0)}
-          >
-            {isSubmitting ? (
-              "Salvando..."
-            ) : (
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                Salvar checklist
-              </>
-            )}
-          </Button>
-        </div>
-      </form>
+          <div className="flex justify-end gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate("/new-checklists")}
+            >
+              Cancelar
+            </Button>
+            
+            <Button
+              type="submit"
+              disabled={isSubmitting || !checklist.title || !checklist.category || (questions.length <= 0)}
+            >
+              {isSubmitting ? (
+                "Salvando..."
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Salvar checklist
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
