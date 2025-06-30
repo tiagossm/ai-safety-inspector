@@ -20,6 +20,7 @@ export function useChecklistCreation() {
   const [aiPrompt, setAiPrompt] = useState("");
   const [numQuestions, setNumQuestions] = useState(10);
   const [openAIAssistant, setOpenAIAssistant] = useState("");
+  const [importedQuestions, setImportedQuestions] = useState<any[]>([]);
   
   const [questions, setQuestions] = useState([
     {
@@ -48,6 +49,11 @@ export function useChecklistCreation() {
 
   const clearFile = () => {
     setFile(null);
+  };
+
+  const handleImportedQuestions = (importedData: any[]) => {
+    setImportedQuestions(importedData);
+    console.log("Perguntas importadas salvas:", importedData);
   };
 
   const handleAddQuestion = () => {
@@ -83,11 +89,14 @@ export function useChecklistCreation() {
   };
 
   const handleSubmit = async (e: React.FormEvent, activeTab: string = "manual"): Promise<boolean> => {
+    // Se temos perguntas importadas, usar elas no lugar das perguntas manuais
+    const questionsToUse = importedQuestions.length > 0 ? importedQuestions : questions;
+    
     return await handleFormSubmit(
       e,
       activeTab,
       form,
-      questions,
+      questionsToUse,
       file,
       aiPrompt,
       openAIAssistant,
@@ -116,6 +125,8 @@ export function useChecklistCreation() {
     numQuestions,
     setNumQuestions,
     openAIAssistant,
-    setOpenAIAssistant
+    setOpenAIAssistant,
+    importedQuestions,
+    handleImportedQuestions
   };
 }

@@ -1,16 +1,15 @@
-
 import React from "react";
 import { NewChecklist } from "@/types/checklist";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CompanyListItem } from "@/types/CompanyListItem";
 import { FormActions } from "./FormActions";
+import { CSVImportSection } from "./CSVImportSection";
+import { useCSVImport } from "@/hooks/checklist/form/useCSVImport";
 import { useNavigate } from "react-router-dom";
-import { X, Upload } from "lucide-react";
 
 interface ImportCreateFormProps {
   form: NewChecklist;
@@ -38,9 +37,33 @@ export function ImportCreateForm({
   isSubmitting
 }: ImportCreateFormProps) {
   const navigate = useNavigate();
+  const { 
+    parsedQuestions, 
+    isProcessing, 
+    handleFileImport, 
+    handleTextImport, 
+    hasImportedQuestions 
+  } = useCSVImport();
+
+  const handleCSVDataParsed = (data: any[]) => {
+    console.log("Processando dados CSV:", data);
+    // Os dados já foram processados pelo hook useCSVImport
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    return await onSubmit(e);
+  };
+
+  // Integrar o file do prop com o hook CSV quando necessário
+  React.useEffect(() => {
+    if (file && !hasImportedQuestions) {
+      handleFileImport(file);
+    }
+  }, [file, handleFileImport, hasImportedQuestions]);
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6">
+    <form onSubmit={handleFormSubmit} className="space-y-6">
       <div className="space-y-6">
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -124,57 +147,40 @@ export function ImportCreateForm({
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="file">Arquivo CSV *</Label>
-                <div className="border-2 border-dashed rounded-md p-6 flex flex-col items-center justify-center bg-gray-50">
-                  {file ? (
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="text-center">
-                        <p className="font-medium">{file.name}</p>
-                        <p className="text-sm text-muted-foreground">{(file.size / 1024).toFixed(2)} KB</p>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onFileChange({ target: { files: null } } as any)}
-                        className="flex items-center gap-1"
-                      >
-                        <X className="h-4 w-4" />
-                        <span>Remover</span>
-                      </Button>
-                    </div>
-                  ) : (
-                    <>
-                      <Upload className="h-10 w-10 text-muted-foreground mb-2" />
-                      <p className="mb-1 font-medium">Clique para selecionar ou arraste um arquivo</p>
-                      <p className="text-sm text-muted-foreground mb-4">Formatos suportados: CSV</p>
-                      <Input
-                        id="file"
-                        type="file"
-                        accept=".csv"
-                        onChange={onFileChange}
-                        className="hidden"
-                      />
-                      <Button type="button" variant="outline" asChild>
-                        <label htmlFor="file">Selecionar arquivo</label>
-                      </Button>
-                    </>
-                  )}
-                </div>
+                <Label>Importar Perguntas CSV</Label>
+                <CSVImportSection
+                  onDataParsed={handleCSVDataParsed}
+                  file={file}
+                  onFileChange={onFileChange}
+                  onTextImport={handleTextImport}
+                />
               </div>
 
-              <div className="p-4 bg-slate-50 rounded-md border mt-4">
-                <h3 className="font-medium mb-2">Formato esperado do CSV</h3>
-                <p className="text-sm text-muted-foreground mb-2">
-                  O arquivo CSV deve conter as seguintes colunas:
-                </p>
-                <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-4">
-                  <li>pergunta (texto da pergunta)</li>
-                  <li>tipo_resposta (sim/não, texto, múltipla escolha)</li>
-                  <li>obrigatorio (sim/não)</li>
-                  <li>opcoes (para perguntas de múltipla escolha, separadas por |)</li>
-                </ul>
-              </div>
+              {hasImportedQuestions && (
+                <div className="p-4 bg-green-50 rounded-md border border-green-200">
+                  <h3 className="font-medium text-green-800 mb-2">
+                    Perguntas Importadas ({parsedQuestions.length})
+                  </h3>
+                  <div className="max-h-32 overflow-y-auto">
+                    {parsedQuestions.slice(0, 3).map((question, index) => (
+                      <p key={index} className="text-sm text-green-700 mb-1">
+                        {index + 1}. {question.pergunta || question.question || 'Pergunta sem título'}
+                      </p>
+                    ))}
+                    {parsedQuestions.length > 3 && (
+                      <p className="text-sm text-green-600 italic">
+                        ... e mais {parsedQuestions.length - 3} perguntas
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {isProcessing && (
+                <div className="p-4 bg-blue-50 rounded-md border border-blue-200">
+                  <p className="text-sm text-blue-700">Processando dados CSV...</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -183,7 +189,7 @@ export function ImportCreateForm({
       <FormActions
         isSubmitting={isSubmitting}
         onCancel={() => navigate("/checklists")}
-        canSubmit={true}
+        canSubmit={!!form.title}
         submitText="Importar e Avançar"
       />
     </form>
