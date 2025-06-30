@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Trash2, GripVertical, AlertTriangle } from "lucide-react";
 import { ChecklistQuestion } from "@/types/newChecklist";
-import { ResponseTypeSelector } from "./ResponseTypeSelector";
+import { ResponseTypeSelector } from "@/components/common/ResponseTypeSelector";
 import { SmartOptionsManager } from "./SmartOptionsManager";
 import { QuestionValidationFeedback } from "./QuestionValidationFeedback";
 import { useChecklistValidation } from "@/hooks/new-checklist/useChecklistValidation";

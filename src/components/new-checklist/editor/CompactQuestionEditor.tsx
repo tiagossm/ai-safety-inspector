@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { GripVertical, Trash2, Settings, AlertCircle, CheckCircle, ChevronDown, ChevronUp } from "lucide-react";
-import { ResponseTypeSelector } from "./ResponseTypeSelector";
+import { ResponseTypeSelector } from "@/components/common/ResponseTypeSelector";
 import { SimpleOptionsEditor } from "./SimpleOptionsEditor";
 import { CompactMediaCard } from "./CompactMediaCard";
 import { TYPES_REQUIRING_OPTIONS } from "@/types/responseTypes";
