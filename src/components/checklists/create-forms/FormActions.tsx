@@ -1,39 +1,23 @@
 
+import React from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
 
-export interface FormActionsProps {
+interface FormActionsProps {
   isSubmitting: boolean;
   onCancel: () => void;
-  canSubmit?: boolean;
+  canSubmit: boolean;
   submitText?: string;
-  showSubmitButton?: boolean;
-}
-
-export function BackButton({ onClick }: { onClick: () => void }) {
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      onClick={onClick}
-      className="flex items-center gap-1"
-    >
-      <ChevronLeft className="h-4 w-4" />
-      <span>Voltar</span>
-    </Button>
-  );
 }
 
 export function FormActions({
   isSubmitting,
   onCancel,
-  canSubmit = true,
-  submitText = "Salvar",
-  showSubmitButton = true
+  canSubmit,
+  submitText = "Criar Checklist"
 }: FormActionsProps) {
   return (
-    <div className="flex justify-between items-center border-t pt-4">
+    <div className="flex justify-end space-x-4">
       <Button
         type="button"
         variant="outline"
@@ -42,16 +26,32 @@ export function FormActions({
       >
         Cancelar
       </Button>
-
-      {showSubmitButton && (
-        <Button
-          type="submit"
-          disabled={isSubmitting || !canSubmit}
-          className="bg-primary hover:bg-primary/90"
-        >
-          {isSubmitting ? "Processando..." : submitText}
-        </Button>
-      )}
+      
+      <Button
+        type="submit"
+        disabled={isSubmitting || !canSubmit}
+      >
+        {isSubmitting ? (
+          "Salvando..."
+        ) : (
+          <>
+            <Save className="h-4 w-4 mr-2" />
+            {submitText}
+          </>
+        )}
+      </Button>
     </div>
+  );
+}
+
+interface BackButtonProps {
+  onClick: () => void;
+}
+
+export function BackButton({ onClick }: BackButtonProps) {
+  return (
+    <Button variant="ghost" size="icon" onClick={onClick}>
+      <ArrowLeft className="h-5 w-5" />
+    </Button>
   );
 }

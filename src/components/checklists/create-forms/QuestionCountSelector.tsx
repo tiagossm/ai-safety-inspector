@@ -1,41 +1,38 @@
 
 import React from "react";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface QuestionCountSelectorProps {
   questionCount: number;
-  setQuestionCount: React.Dispatch<React.SetStateAction<number>>;
-  min?: number;
-  max?: number;
+  setQuestionCount: (count: number) => void;
 }
 
-export function QuestionCountSelector({
-  questionCount,
-  setQuestionCount,
-  min = 5,
-  max = 30
+export default function QuestionCountSelector({ 
+  questionCount, 
+  setQuestionCount 
 }: QuestionCountSelectorProps) {
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <Label htmlFor="question-count">Número de perguntas</Label>
-        <span className="text-sm font-medium">{questionCount}</span>
-      </div>
-      <Slider
-        id="question-count"
-        min={min}
-        max={max}
-        step={1}
-        value={[questionCount]}
-        onValueChange={(values) => setQuestionCount(values[0])}
-        className="my-4"
-      />
+    <div className="space-y-2">
+      <Label htmlFor="question-count">Número de perguntas</Label>
+      <Select 
+        value={questionCount.toString()} 
+        onValueChange={(value) => setQuestionCount(parseInt(value))}
+      >
+        <SelectTrigger id="question-count">
+          <SelectValue placeholder="Selecione a quantidade" />
+        </SelectTrigger>
+        <SelectContent>
+          {[5, 10, 15, 20, 25, 30].map((count) => (
+            <SelectItem key={count} value={count.toString()}>
+              {count} perguntas
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       <p className="text-sm text-muted-foreground">
-        Defina a quantidade aproximada de perguntas que o checklist deve conter.
+        Escolha quantas perguntas a IA deve gerar para seu checklist.
       </p>
     </div>
   );
 }
-
-export default QuestionCountSelector;
