@@ -1,12 +1,4 @@
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { AICreateForm } from "@/components/checklists/create-forms/AICreateForm";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,36 +7,24 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Plus, Bot, Upload, Save } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, Plus, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useChecklistCreate } from "@/hooks/new-checklist/useChecklistCreate";
-import { useChecklistAI } from "@/hooks/new-checklist/useChecklistAI";
-import { CSVImportSection } from "@/components/checklists/create-forms/CSVImportSection";
 import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
-import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 import { useChecklistCompanies } from "@/hooks/checklist/form/useChecklistCompanies";
-import { NewChecklist } from "@/types/checklist";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function NewChecklistCreate() {
   const navigate = useNavigate();
   const createChecklist = useChecklistCreate();
-  const { 
-    prompt, 
-    setPrompt, 
-    questionCount, 
-    setQuestionCount, 
-    isGenerating, 
-    selectedAssistant, 
-    setSelectedAssistant,
-    openAIAssistant,
-    setOpenAIAssistant,
-    generateChecklist 
-  } = useChecklistAI();
-  
   const { companies, loadingCompanies } = useChecklistCompanies();
   
-  const [activeTab, setActiveTab] = useState<"manual" | "ai" | "import">("manual");
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [checklist, setChecklist] = useState<NewChecklistPayload>({
@@ -152,21 +132,15 @@ export default function NewChecklistCreate() {
         return;
       }
       
-      // Fix the type of status_checklist to be explicitly "ativo" | "inativo"
       const statusChecklistValue = checklist.status === "active" ? "ativo" : "inativo";
       const statusChecklist = statusChecklistValue as "ativo" | "inativo";
-      
-      // Fix the type of origin to be explicitly "manual" | "ia" | "csv"
-      const originValue = activeTab;
-      const origin = originValue as "manual" | "ia" | "csv";
       
       const processedChecklist: NewChecklistPayload = {
         ...checklist,
         status_checklist: statusChecklist,
-        origin: origin
+        origin: "manual"
       };
       
-      // Convert to NewChecklist type for the API call to fix the type incompatibility
       const checklistForMutation: any = {
         ...processedChecklist,
       };
@@ -188,114 +162,6 @@ export default function NewChecklistCreate() {
     }
   };
   
-  const handleGenerateWithAI = async () => {
-    if (!checklist.category?.trim()) {
-      toast.error("A categoria do checklist é obrigatória.");
-      return;
-    }
-    
-    if (!checklist.company_id) {
-      toast.error("Por favor, selecione uma empresa.");
-      return;
-    }
-    
-    if (!openAIAssistant) {
-      toast.error("Por favor, selecione um assistente de IA.");
-      return;
-    }
-    
-    try {
-      setIsSubmitting(true);
-      
-      const typedChecklist: NewChecklistPayload = {
-        ...checklist,
-        status_checklist: (checklist.status === "active" ? "ativo" : "inativo") as "ativo" | "inativo",
-        origin: "ia" as "manual" | "ia" | "csv"
-      };
-      
-      const result = await generateChecklist(typedChecklist);
-      
-      if (result.success && result.questions && result.groups) {
-        setChecklist(prev => ({
-          ...prev,
-          ...(result.checklistData || {}),
-          is_template: result.checklistData?.is_template || prev.is_template
-        }));
-        
-        setQuestions(result.questions);
-        setGroups(result.groups);
-        
-        setActiveTab("manual");
-        
-        toast.success("Checklist gerado com sucesso! Revise antes de salvar.");
-      }
-    } catch (error) {
-      console.error("Error generating checklist:", error);
-      toast.error("Erro ao gerar checklist. Tente novamente.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-  
-  const handleCsvDataParsed = (data: any[]) => {
-    try {
-      const importedQuestions: ChecklistQuestion[] = data.map((row, index) => {
-        const responseTypeMap: Record<string, ChecklistQuestion["responseType"]> = {
-          'sim/não': 'yes_no',
-          'múltipla escolha': 'multiple_choice',
-          'texto': 'text',
-          'numérico': 'numeric',
-          'foto': 'photo',
-          'assinatura': 'signature'
-        };
-        
-        let responseType: ChecklistQuestion["responseType"] = 'yes_no';
-        const rawType = (row.tipo_resposta || row.type || '').toLowerCase();
-        
-        if (responseTypeMap[rawType]) {
-          responseType = responseTypeMap[rawType];
-        }
-        
-        let options: string[] | undefined = undefined;
-        if (responseType === 'multiple_choice' && row.opcoes) {
-          options = row.opcoes.split('|').map((opt: string) => opt.trim());
-        }
-        
-        return {
-          id: `imported-${Date.now()}-${index}`,
-          text: row.pergunta || row.question || `Pergunta ${index + 1}`,
-          responseType: responseType,
-          isRequired: row.obrigatorio === 'true' || row.required === 'true' || true,
-          weight: 1,
-          allowsPhoto: false,
-          allowsVideo: false,
-          allowsAudio: false,
-          allowsFiles: false,
-          order: index,
-          options: options,
-          groupId: questions[0]?.groupId
-        };
-      });
-      
-      if (importedQuestions.length > 0) {
-        setQuestions(importedQuestions);
-        
-        setActiveTab("manual");
-        
-        if (!checklist.title) {
-          setChecklist({
-            ...checklist,
-            title: `Checklist importado (${new Date().toLocaleDateString()})`,
-            description: `Checklist importado com ${importedQuestions.length} perguntas`
-          });
-        }
-      }
-    } catch (error) {
-      console.error("Error processing CSV data:", error);
-      toast.error("Erro ao processar dados importados");
-    }
-  };
-  
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -312,242 +178,153 @@ export default function NewChecklistCreate() {
       </div>
       
       <form onSubmit={handleSubmit} className="space-y-6">
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-          <TabsList className="grid grid-cols-3 mb-4">
-            <TabsTrigger value="manual" className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              <span>Criação Manual</span>
-            </TabsTrigger>
-            <TabsTrigger value="ai" className="flex items-center gap-2">
-              <Bot className="h-4 w-4" />
-              <span>Gerado por IA</span>
-            </TabsTrigger>
-            <TabsTrigger value="import" className="flex items-center gap-2">
-              <Upload className="h-4 w-4" />
-              <span>Importar</span>
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="manual">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="title">
-                        Título <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="title"
-                        value={checklist.title}
-                        onChange={(e) => setChecklist({ ...checklist, title: e.target.value })}
-                        placeholder="Digite o título do checklist"
-                        required
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="description">Descrição</Label>
-                      <Textarea
-                        id="description"
-                        value={checklist.description || ""}
-                        onChange={(e) => setChecklist({ ...checklist, description: e.target.value })}
-                        placeholder="Digite uma descrição para o checklist"
-                        className="min-h-[100px]"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="category">
-                        Categoria <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="category"
-                        value={checklist.category || ""}
-                        onChange={(e) => setChecklist({ ...checklist, category: e.target.value })}
-                        placeholder="Ex: NR-35, Inspeção de Equipamentos"
-                        required
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="company">Empresa</Label>
-                      <Select
-                        value={checklist.company_id?.toString() || ""}
-                        onValueChange={(value) =>
-                          setChecklist({
-                            ...checklist,
-                            company_id: value === "__none" ? undefined : value
-                          })
-                        }
-                      >
-                        <SelectTrigger id="company">
-                          <SelectValue placeholder="Selecione uma empresa" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__none">Nenhuma</SelectItem>
-
-                          {loadingCompanies ? (
-                            <SelectItem value="__loading" disabled>
-                              Carregando empresas...
-                            </SelectItem>
-                          ) : (
-                            companies.map((company) => (
-                              <SelectItem key={company.id} value={company.id}>
-                                {company.fantasy_name || "Empresa sem nome"}
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="template"
-                        checked={checklist.is_template || false}
-                        onCheckedChange={(checked) => setChecklist({ ...checklist, is_template: checked })}
-                      />
-                      <Label htmlFor="template">Salvar como template</Label>
-                    </div>
-                  </div>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">
+                    Título <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="title"
+                    value={checklist.title}
+                    onChange={(e) => setChecklist({ ...checklist, title: e.target.value })}
+                    placeholder="Digite o título do checklist"
+                    required
+                  />
                 </div>
                 
-                <div className="mt-6 border-t pt-6">
-                  <h3 className="text-lg font-medium mb-4">Perguntas</h3>
-                  
-                  <div className="space-y-4">
-                    {questions.map((question) => (
-                      <div key={question.id} className="border rounded-md p-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>Pergunta</Label>
-                            <Input
-                              value={question.text}
-                              onChange={(e) => handleUpdateQuestion({ ...question, text: e.target.value })}
-                              placeholder="Digite a pergunta"
-                            />
-                          </div>
-                          
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-2">
-                              <Label>Tipo de resposta</Label>
-                              <select
-                                value={question.responseType}
-                                onChange={(e) => handleUpdateQuestion({ 
-                                  ...question, 
-                                  responseType: e.target.value as ChecklistQuestion["responseType"]
-                                })}
-                                className="w-full border rounded p-2"
-                              >
-                                <option value="yes_no">Sim/Não</option>
-                                <option value="multiple_choice">Múltipla escolha</option>
-                                <option value="text">Texto</option>
-                                <option value="numeric">Numérico</option>
-                                <option value="photo">Foto</option>
-                                <option value="signature">Assinatura</option>
-                              </select>
-                            </div>
-                            
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveQuestion(question.id)}
-                            >
-                              Remover
-                            </Button>
-                          </div>
-                        </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Descrição</Label>
+                  <Textarea
+                    id="description"
+                    value={checklist.description || ""}
+                    onChange={(e) => setChecklist({ ...checklist, description: e.target.value })}
+                    placeholder="Digite uma descrição para o checklist"
+                    className="min-h-[100px]"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="category">
+                    Categoria <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="category"
+                    value={checklist.category || ""}
+                    onChange={(e) => setChecklist({ ...checklist, category: e.target.value })}
+                    placeholder="Ex: NR-35, Inspeção de Equipamentos"
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="company">Empresa</Label>
+                  <Select
+                    value={checklist.company_id?.toString() || ""}
+                    onValueChange={(value) =>
+                      setChecklist({
+                        ...checklist,
+                        company_id: value === "__none" ? undefined : value
+                      })
+                    }
+                  >
+                    <SelectTrigger id="company">
+                      <SelectValue placeholder="Selecione uma empresa" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none">Nenhuma</SelectItem>
+                      {loadingCompanies ? (
+                        <SelectItem value="__loading" disabled>
+                          Carregando empresas...
+                        </SelectItem>
+                      ) : (
+                        companies.map((company) => (
+                          <SelectItem key={company.id} value={company.id}>
+                            {company.fantasy_name || "Empresa sem nome"}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="template"
+                    checked={checklist.is_template || false}
+                    onCheckedChange={(checked) => setChecklist({ ...checklist, is_template: checked })}
+                  />
+                  <Label htmlFor="template">Salvar como template</Label>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-6 border-t pt-6">
+              <h3 className="text-lg font-medium mb-4">Perguntas</h3>
+              
+              <div className="space-y-4">
+                {questions.map((question) => (
+                  <div key={question.id} className="border rounded-md p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Pergunta</Label>
+                        <Input
+                          value={question.text}
+                          onChange={(e) => handleUpdateQuestion({ ...question, text: e.target.value })}
+                          placeholder="Digite a pergunta"
+                        />
                       </div>
-                    ))}
-                    
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleAddQuestion}
-                      className="w-full"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Adicionar pergunta
-                    </Button>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-2">
+                          <Label>Tipo de resposta</Label>
+                          <select
+                            value={question.responseType}
+                            onChange={(e) => handleUpdateQuestion({ 
+                              ...question, 
+                              responseType: e.target.value as ChecklistQuestion["responseType"]
+                            })}
+                            className="w-full border rounded p-2"
+                          >
+                            <option value="yes_no">Sim/Não</option>
+                            <option value="multiple_choice">Múltipla escolha</option>
+                            <option value="text">Texto</option>
+                            <option value="numeric">Numérico</option>
+                            <option value="photo">Foto</option>
+                            <option value="signature">Assinatura</option>
+                          </select>
+                        </div>
+                        
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveQuestion(question.id)}
+                        >
+                          Remover
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="ai">
-            <AICreateForm
-              form={checklist as any}
-              setForm={setChecklist as any}
-              users={[]} 
-              loadingUsers={false}
-              companies={companies}
-              loadingCompanies={loadingCompanies}
-              aiPrompt={prompt}
-              setAiPrompt={setPrompt}
-              numQuestions={questionCount}
-              setNumQuestions={setQuestionCount}
-              onGenerateAI={handleGenerateWithAI}
-              aiLoading={isGenerating}
-              selectedAssistant={selectedAssistant}
-              setSelectedAssistant={setSelectedAssistant}
-              openAIAssistant={openAIAssistant}
-              setOpenAIAssistant={setOpenAIAssistant}
-              assistants={[]} 
-              loadingAssistants={false}
-            />
-          </TabsContent>
-          
-          <TabsContent value="import">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="space-y-4 mb-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="import-title">
-                      Título <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="import-title"
-                      value={checklist.title}
-                      onChange={(e) => setChecklist({ ...checklist, title: e.target.value })}
-                      placeholder="Digite o título do checklist"
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="import-category">
-                      Categoria <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="import-category"
-                      value={checklist.category || ""}
-                      onChange={(e) => setChecklist({ ...checklist, category: e.target.value })}
-                      placeholder="Ex: NR-35, Inspeção de Equipamentos"
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="import-description">Descrição</Label>
-                    <Textarea
-                      id="import-description"
-                      value={checklist.description || ""}
-                      onChange={(e) => setChecklist({ ...checklist, description: e.target.value })}
-                      placeholder="Digite uma descrição para o checklist"
-                      className="min-h-[100px]"
-                    />
-                  </div>
-                </div>
-                <CSVImportSection onDataParsed={handleCsvDataParsed} />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                ))}
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleAddQuestion}
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar pergunta
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
         
         <div className="flex justify-end gap-4">
           <Button
@@ -560,7 +337,7 @@ export default function NewChecklistCreate() {
           
           <Button
             type="submit"
-            disabled={isSubmitting || !checklist.title || !checklist.category || (activeTab === "manual" && questions.length <= 0)}
+            disabled={isSubmitting || !checklist.title || !checklist.category || (questions.length <= 0)}
           >
             {isSubmitting ? (
               "Salvando..."
@@ -573,8 +350,6 @@ export default function NewChecklistCreate() {
           </Button>
         </div>
       </form>
-      
-      <FloatingNavigation threshold={400} />
     </div>
   );
 }

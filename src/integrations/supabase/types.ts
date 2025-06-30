@@ -224,6 +224,48 @@ export type Database = {
           },
         ]
       }
+      checklist_groups: {
+        Row: {
+          checklist_id: string
+          created_at: string
+          id: string
+          order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          checklist_id: string
+          created_at?: string
+          id?: string
+          order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          checklist_id?: string
+          created_at?: string
+          id?: string
+          order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_groups_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_with_creator"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_groups_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "checklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_history: {
         Row: {
           action: string
@@ -336,18 +378,133 @@ export type Database = {
           },
         ]
       }
+      checklist_item_options: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_correct: boolean | null
+          item_id: string
+          option_text: string
+          option_value: string | null
+          score: number | null
+          sort_order: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_correct?: boolean | null
+          item_id: string
+          option_text: string
+          option_value?: string | null
+          score?: number | null
+          sort_order?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_correct?: boolean | null
+          item_id?: string
+          option_text?: string
+          option_value?: string | null
+          score?: number | null
+          sort_order?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_item_options_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_itens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_item_responses: {
+        Row: {
+          action_plan: string | null
+          answer: Json
+          checklist_item_id: string | null
+          comments: string | null
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          inspection_id: string | null
+          media_urls: string[] | null
+          notes: string | null
+          parent_response_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          action_plan?: string | null
+          answer: Json
+          checklist_item_id?: string | null
+          comments?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          inspection_id?: string | null
+          media_urls?: string[] | null
+          notes?: string | null
+          parent_response_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          action_plan?: string | null
+          answer?: Json
+          checklist_item_id?: string | null
+          comments?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          inspection_id?: string | null
+          media_urls?: string[] | null
+          notes?: string | null
+          parent_response_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_item_responses_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_itens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_item_responses_inspection_id_fkey"
+            columns: ["inspection_id"]
+            isOneToOne: false
+            referencedRelation: "inspections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_item_responses_parent_response_id_fkey"
+            columns: ["parent_response_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_item_responses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_itens: {
         Row: {
           checklist_id: string
           condition_value: string | null
           created_at: string
+          display_condition: Json | null
           has_subchecklist: boolean | null
           hint: string | null
           id: string
+          is_conditional: boolean | null
+          level: number | null
           obrigatorio: boolean
           opcoes: Json | null
           ordem: number
           parent_item_id: string | null
+          path: string | null
           pergunta: string
           permite_audio: boolean | null
           permite_files: boolean | null
@@ -366,13 +523,17 @@ export type Database = {
           checklist_id: string
           condition_value?: string | null
           created_at?: string
+          display_condition?: Json | null
           has_subchecklist?: boolean | null
           hint?: string | null
           id?: string
+          is_conditional?: boolean | null
+          level?: number | null
           obrigatorio?: boolean
           opcoes?: Json | null
           ordem?: number
           parent_item_id?: string | null
+          path?: string | null
           pergunta: string
           permite_audio?: boolean | null
           permite_files?: boolean | null
@@ -391,13 +552,17 @@ export type Database = {
           checklist_id?: string
           condition_value?: string | null
           created_at?: string
+          display_condition?: Json | null
           has_subchecklist?: boolean | null
           hint?: string | null
           id?: string
+          is_conditional?: boolean | null
+          level?: number | null
           obrigatorio?: boolean
           opcoes?: Json | null
           ordem?: number
           parent_item_id?: string | null
+          path?: string | null
           pergunta?: string
           permite_audio?: boolean | null
           permite_files?: boolean | null
@@ -836,6 +1001,66 @@ export type Database = {
           },
         ]
       }
+      inspection_audit_logs: {
+        Row: {
+          access_source: string | null
+          action_type: string
+          changed_field: string | null
+          created_at: string
+          id: string
+          inspection_id: string
+          metadata: Json | null
+          new_value: Json | null
+          previous_value: Json | null
+          question_id: string | null
+          timestamp: string
+          user_id: string
+        }
+        Insert: {
+          access_source?: string | null
+          action_type: string
+          changed_field?: string | null
+          created_at?: string
+          id?: string
+          inspection_id: string
+          metadata?: Json | null
+          new_value?: Json | null
+          previous_value?: Json | null
+          question_id?: string | null
+          timestamp?: string
+          user_id: string
+        }
+        Update: {
+          access_source?: string | null
+          action_type?: string
+          changed_field?: string | null
+          created_at?: string
+          id?: string
+          inspection_id?: string
+          metadata?: Json | null
+          new_value?: Json | null
+          previous_value?: Json | null
+          question_id?: string | null
+          timestamp?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_audit_logs_inspection_id_fkey"
+            columns: ["inspection_id"]
+            isOneToOne: false
+            referencedRelation: "inspections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspection_audit_logs_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_itens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inspection_files: {
         Row: {
           created_at: string
@@ -871,6 +1096,48 @@ export type Database = {
           },
         ]
       }
+      inspection_items: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          inspection_id: string | null
+          template_item_id: string | null
+          type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          inspection_id?: string | null
+          template_item_id?: string | null
+          type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          inspection_id?: string | null
+          template_item_id?: string | null
+          type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_items_inspection_id_fkey"
+            columns: ["inspection_id"]
+            isOneToOne: false
+            referencedRelation: "inspections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspection_items_template_item_id_fkey"
+            columns: ["template_item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_itens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inspection_responses: {
         Row: {
           action_plan: string | null
@@ -880,9 +1147,9 @@ export type Database = {
           created_at: string | null
           id: string
           inspection_id: string | null
+          inspection_item_id: string | null
           media_urls: string[] | null
           notes: string | null
-          question_id: string
           sub_checklist_responses: Json | null
           updated_at: string | null
         }
@@ -894,9 +1161,9 @@ export type Database = {
           created_at?: string | null
           id?: string
           inspection_id?: string | null
+          inspection_item_id?: string | null
           media_urls?: string[] | null
           notes?: string | null
-          question_id: string
           sub_checklist_responses?: Json | null
           updated_at?: string | null
         }
@@ -908,9 +1175,9 @@ export type Database = {
           created_at?: string | null
           id?: string
           inspection_id?: string | null
+          inspection_item_id?: string | null
           media_urls?: string[] | null
           notes?: string | null
-          question_id?: string
           sub_checklist_responses?: Json | null
           updated_at?: string | null
         }
@@ -923,10 +1190,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "inspection_responses_question_id_fkey"
-            columns: ["question_id"]
+            foreignKeyName: "inspection_responses_inspection_item_id_fkey"
+            columns: ["inspection_item_id"]
             isOneToOne: false
-            referencedRelation: "checklist_itens"
+            referencedRelation: "inspection_items"
             referencedColumns: ["id"]
           },
         ]
@@ -937,18 +1204,21 @@ export type Database = {
           signature_data: string
           signed_at: string | null
           signer_id: string
+          signer_name: string | null
         }
         Insert: {
           inspection_id: string
           signature_data: string
           signed_at?: string | null
           signer_id: string
+          signer_name?: string | null
         }
         Update: {
           inspection_id?: string
           signature_data?: string
           signed_at?: string | null
           signer_id?: string
+          signer_name?: string | null
         }
         Relationships: [
           {
@@ -956,6 +1226,13 @@ export type Database = {
             columns: ["inspection_id"]
             isOneToOne: true
             referencedRelation: "inspections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspection_signatures_signer_id_fkey"
+            columns: ["signer_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -1922,6 +2199,47 @@ export type Database = {
         Args: { inspection_id: string }
         Returns: boolean
       }
+      get_checklist_item_children: {
+        Args: { item_id: string }
+        Returns: {
+          id: string
+          pergunta: string
+          tipo_resposta: string
+          obrigatorio: boolean
+          ordem: number
+          opcoes: Json
+          level: number
+          path: string
+          display_condition: Json
+          is_conditional: boolean
+        }[]
+      }
+      get_checklist_tree: {
+        Args: { checklist_id_param: string }
+        Returns: {
+          id: string
+          parent_item_id: string
+          pergunta: string
+          tipo_resposta: string
+          obrigatorio: boolean
+          ordem: number
+          opcoes: Json
+          level: number
+          path: string
+          display_condition: Json
+          is_conditional: boolean
+          hint: string
+          weight: number
+          permite_foto: boolean
+          permite_video: boolean
+          permite_audio: boolean
+          permite_files: boolean
+        }[]
+      }
+      get_checklist_with_items: {
+        Args: { checklist_id_param: string }
+        Returns: Json
+      }
       get_cipa_dimensioning: {
         Args: { p_employee_count: number; p_cnae: string; p_risk_level: number }
         Returns: Json
@@ -1980,6 +2298,20 @@ export type Database = {
       }
       l2_normalize: {
         Args: { "": string } | { "": unknown } | { "": unknown }
+        Returns: string
+      }
+      log_inspection_audit: {
+        Args: {
+          p_inspection_id: string
+          p_question_id?: string
+          p_user_id?: string
+          p_action_type?: string
+          p_changed_field?: string
+          p_previous_value?: Json
+          p_new_value?: Json
+          p_access_source?: string
+          p_metadata?: Json
+        }
         Returns: string
       }
       match_documents: {
