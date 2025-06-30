@@ -33,17 +33,13 @@ export function useCSVImport() {
   const validateCSVData = useCallback((data: CSVQuestion[]): { valid: boolean; errors: string[] } => {
     const errors: string[] = [];
     
-    // Verificar se há dados
     if (data.length === 0) {
       errors.push("Nenhum dado encontrado no arquivo");
       return { valid: false, errors };
     }
 
-    // Verificar colunas obrigatórias
-    const requiredColumns = ['pergunta', 'tipo_resposta', 'obrigatorio'];
     const firstRow = data[0];
     
-    // Verificar se pelo menos uma das variações de coluna existe
     const hasQuestionColumn = firstRow.hasOwnProperty('pergunta') || firstRow.hasOwnProperty('question');
     const hasTypeColumn = firstRow.hasOwnProperty('tipo_resposta') || firstRow.hasOwnProperty('type');
     const hasRequiredColumn = firstRow.hasOwnProperty('obrigatorio') || firstRow.hasOwnProperty('required');
@@ -58,29 +54,24 @@ export function useCSVImport() {
       errors.push("Coluna 'obrigatorio' ou 'required' é obrigatória");
     }
 
-    // Validar cada linha
     data.forEach((row, index) => {
       const rowNumber = index + 1;
       const pergunta = row.pergunta || row.question;
       const tipo = row.tipo_resposta || row.type;
       const obrigatorio = row.obrigatorio || row.required;
 
-      // Verificar se a pergunta não está vazia
       if (!pergunta || pergunta.trim() === '') {
         errors.push(`Linha ${rowNumber}: Pergunta não pode estar vazia`);
       }
 
-      // Verificar se o tipo de resposta é válido
       if (!tipo || !validResponseTypes.includes(tipo)) {
         errors.push(`Linha ${rowNumber}: Tipo de resposta inválido "${tipo}". Use: ${validResponseTypes.join(', ')}`);
       }
 
-      // Verificar campo obrigatório
       if (obrigatorio && !['true', 'false', 'sim', 'não'].includes(String(obrigatorio).toLowerCase())) {
         errors.push(`Linha ${rowNumber}: Campo obrigatório deve ser "true", "false", "sim" ou "não"`);
       }
 
-      // Verificar se seleção múltipla tem opções
       if (tipo === 'seleção múltipla') {
         const opcoes = row.opcoes || row.options;
         if (!opcoes || opcoes.trim() === '') {
@@ -97,7 +88,6 @@ export function useCSVImport() {
   const processCSVData = useCallback((data: CSVQuestion[]) => {
     console.log("Iniciando processamento de dados CSV:", data);
     
-    // Filtrar linhas vazias
     const validData = data.filter(row => {
       const values = Object.values(row);
       return values.some(value => value !== "" && value !== undefined && value !== null);
@@ -108,7 +98,6 @@ export function useCSVImport() {
       return;
     }
 
-    // Validar dados
     const validation = validateCSVData(validData);
     if (!validation.valid) {
       setValidationErrors(validation.errors);
@@ -118,7 +107,6 @@ export function useCSVImport() {
       return;
     }
 
-    // Processar dados válidos
     const processed: ProcessedQuestion[] = validData.map((row, index) => {
       const pergunta = (row.pergunta || row.question || `Pergunta ${index + 1}`).trim();
       const tipo_resposta = (row.tipo_resposta || row.type || 'texto').trim();
@@ -217,6 +205,7 @@ export function useCSVImport() {
     setParsedQuestions([]);
     setProcessedQuestions([]);
     setValidationErrors([]);
+    toast.info("Dados limpos. Você pode importar um novo arquivo.");
   }, []);
 
   const transformQuestionsForSubmit = useCallback(() => {
