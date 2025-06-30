@@ -1,109 +1,47 @@
 
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
-export interface OpenAIAssistant {
+interface Assistant {
   id: string;
   name: string;
-  description: string;
-  model: string;
-  instructions: string;
-  tools: any[];
-  metadata: Record<string, any>;
-  created_at: number;
+  description?: string;
+  model?: string;
 }
 
 export function useOpenAIAssistants() {
-  const [assistants, setAssistants] = useState<OpenAIAssistant[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [assistants, setAssistants] = useState<Assistant[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchAssistants = async () => {
-    setIsLoading(true);
+    setLoading(true);
     setError(null);
-
+    
     try {
-      const { data, error } = await supabase.functions.invoke('list-openai-assistants');
-
+      console.log('Fetching OpenAI assistants...');
+      const { data, error } = await supabase.functions.invoke('list-assistants');
+      
       if (error) {
-        throw new Error(error.message || 'Erro ao buscar assistentes');
+        console.error('Error fetching assistants:', error);
+        setError(`Error fetching assistants: ${error.message}`);
+        return;
       }
-
-      if (data?.assistants) {
+      
+      console.log('Response from list-assistants:', data);
+      
+      if (data && data.assistants) {
+        console.log(`Retrieved ${data.assistants.length} OpenAI assistants`);
         setAssistants(data.assistants);
+      } else {
+        setError('No assistants data returned');
+        console.error('No assistants data in response:', data);
       }
     } catch (err: any) {
-      const errorMessage = err.message || 'Erro desconhecido ao carregar assistentes';
-      setError(errorMessage);
-      toast.error(errorMessage);
+      console.error('Unexpected error fetching assistants:', err);
+      setError(`Unexpected error: ${err.message || 'Unknown error'}`);
     } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const createAssistant = async (assistantData: {
-    name: string;
-    description: string;
-    instructions: string;
-    model?: string;
-    tools?: any[];
-  }) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('create-openai-assistant', {
-        body: {
-          name: assistantData.name,
-          description: assistantData.description,
-          instructions: assistantData.instructions,
-          model: assistantData.model || 'gpt-4o-mini',
-          tools: assistantData.tools || []
-        }
-      });
-
-      if (error) {
-        throw new Error(error.message || 'Erro ao criar assistente');
-      }
-
-      if (data?.assistant) {
-        setAssistants(prev => [...prev, data.assistant]);
-        toast.success('Assistente criado com sucesso!');
-        return data.assistant;
-      }
-    } catch (err: any) {
-      const errorMessage = err.message || 'Erro desconhecido ao criar assistente';
-      setError(errorMessage);
-      toast.error(errorMessage);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const deleteAssistant = async (assistantId: string) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const { error } = await supabase.functions.invoke('delete-openai-assistant', {
-        body: { assistantId }
-      });
-
-      if (error) {
-        throw new Error(error.message || 'Erro ao deletar assistente');
-      }
-
-      setAssistants(prev => prev.filter(a => a.id !== assistantId));
-      toast.success('Assistente deletado com sucesso!');
-    } catch (err: any) {
-      const errorMessage = err.message || 'Erro desconhecido ao deletar assistente';
-      setError(errorMessage);
-      toast.error(errorMessage);
-      throw err;
-    } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -111,13 +49,12 @@ export function useOpenAIAssistants() {
     fetchAssistants();
   }, []);
 
-  return {
-    assistants,
-    isLoading,
+  return { 
+    assistants, 
+    loading, 
     error,
-    fetchAssistants,
-    createAssistant,
-    deleteAssistant,
-    refetch: fetchAssistants
+    refetch: fetchAssistants 
   };
 }
+
+export default useOpenAIAssistants;

@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Image, FileText, ScanSearch, Sparkles, Loader2 } from "lucide-react";
 import { useMediaUpload } from "@/hooks/useMediaUpload";
 import { MediaAttachments } from "./MediaAttachments";
-import { MediaAnalysisResult, Plan5W2H } from "@/hooks/useMediaAnalysis";
+import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 import { MediaPreviewDialog } from "@/components/media/MediaPreviewDialog";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 
@@ -16,7 +16,7 @@ interface MediaUploadSectionProps {
   isReadOnly?: boolean;
   questionText?: string;
   onSaveAnalysis?: (url: string, result: MediaAnalysisResult) => void;
-  onApplyAISuggestion?: (plan: Plan5W2H) => void;
+  onApplyAISuggestion?: (suggestion: string) => void;
   analysisResults?: Record<string, MediaAnalysisResult>;
   onAnalyzeAll?: () => Promise<void>;
   multiModalLoading?: boolean;
@@ -43,13 +43,13 @@ export function MediaUploadSection({
   const [selectedMediaType, setSelectedMediaType] = useState<string | null>(null);
 
   // Ajuste aqui no handleAddActionPlan para disparar onApplyAISuggestion
-  const [planoAcao, setPlanoAcao] = useState<Plan5W2H[]>([]);
+  const [planoAcao, setPlanoAcao] = useState<string[]>([]);
 
-  const handleAddActionPlan = useCallback((plan: Plan5W2H) => {
-    setPlanoAcao(prev => [...prev, plan]);
+  const handleAddActionPlan = useCallback((suggestion: string) => {
+    setPlanoAcao(prev => [...prev, suggestion]);
     setAnalysisDialogOpen(false);
     if (onApplyAISuggestion) {
-      onApplyAISuggestion(plan);  // <-- dispara modal 5w2h no pai
+      onApplyAISuggestion(suggestion);  // <-- dispara modal 5w2h no pai
     }
   }, [onApplyAISuggestion]);
 
@@ -123,7 +123,7 @@ export function MediaUploadSection({
     setAnalysisDialogOpen(true);
   }, []);
 
-  const handleAnalysisComplete = (url: string, result: MediaAnalysisResult) => {
+  const handleAnalysisComplete = (result: MediaAnalysisResult) => {
     if (onSaveAnalysis && selectedMedia) {
       onSaveAnalysis(selectedMedia, result);
     }
@@ -211,16 +211,13 @@ export function MediaUploadSection({
         mediaType={selectedMediaType}
         questionText={questionText}
         onAnalysisComplete={handleAnalysisComplete}
-        onAdd5W2HActionPlan={onApplyAISuggestion}
+          onAddActionPlan={onApplyAISuggestion}
+
       />
       {planoAcao.length > 0 && (
         <ul className="mt-2">
           {planoAcao.map((acao, idx) => (
-            <li key={idx} className="text-xs text-green-800">
-              {acao.what && `O quê: ${acao.what}`}
-              {acao.why && ` | Por quê: ${acao.why}`}
-              {acao.who && ` | Quem: ${acao.who}`}
-            </li>
+            <li key={idx} className="text-xs text-green-800">{acao}</li>
           ))}
         </ul>
       )}

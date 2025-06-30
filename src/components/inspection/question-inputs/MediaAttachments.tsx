@@ -1,10 +1,9 @@
-
 import React, { useState } from "react";
 import { X, ZoomIn, Download, Sparkles, Heart } from "lucide-react";
 import { MediaPreviewDialog } from "@/components/media/MediaPreviewDialog";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 import { MediaAttachmentRenderer } from "@/components/media/renderers/MediaAttachmentRenderer";
-import { MediaAnalysisResult, Plan5W2H } from "@/hooks/useMediaAnalysis";
+import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -16,7 +15,7 @@ interface MediaAttachmentsProps {
   readOnly?: boolean;
   questionText?: string;
   onSaveAnalysis?: (url: string, result: MediaAnalysisResult) => void;
-  onApplyAISuggestion?: (plan: Plan5W2H) => void; // Alterado para Plan5W2H
+  onApplyAISuggestion?: (suggestion: string) => void; // Função que abre modal 5W2H!
   analysisResults?: Record<string, MediaAnalysisResult>;
 }
 
@@ -64,7 +63,7 @@ export function MediaAttachments({
     setIsPlaying(!isPlaying);
   };
   
-  const handleAnalysisComplete = (url: string, result: MediaAnalysisResult) => {
+  const handleAnalysisComplete = (result: MediaAnalysisResult) => {
     if (onSaveAnalysis && activeAnalysisUrl) {
       const resultWithContext = {
         ...result,
@@ -76,8 +75,8 @@ export function MediaAttachments({
 
   const handleApplySuggestion = (url: string) => {
     const analysis = analysisResults[url];
-    if (onApplyAISuggestion && analysis?.plan5w2h) {
-      onApplyAISuggestion(analysis.plan5w2h);
+    if (onApplyAISuggestion && analysis?.actionPlanSuggestion) {
+      onApplyAISuggestion(analysis.actionPlanSuggestion);
     }
   };
 
@@ -135,7 +134,7 @@ export function MediaAttachments({
         questionText={questionText}
         onAnalysisComplete={handleAnalysisComplete}
         additionalMediaUrls={mediaUrls}
-        onAdd5W2HActionPlan={onApplyAISuggestion}
+        onAddActionPlan={onApplyAISuggestion}  // <-- ESSA LINHA É O PULO DO GATO!
       />
     </>
   );

@@ -23,9 +23,9 @@ export function OpenAIAssistantSelector({
   setSelectedAssistant,
   required = true
 }: OpenAIAssistantSelectorProps) {
-  const { assistants, isLoading, error, refetch } = useOpenAIAssistants();
+  const { assistants, loading, error, refetch } = useOpenAIAssistants();
 
-  if (isLoading) {
+  if (loading) {
     return <Skeleton className="h-9 w-full" />;
   }
 

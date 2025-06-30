@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { ResponseData } from "./types/inspectionTypes";
 import { useMediaHandler } from "./useMediaHandler";
@@ -9,52 +10,35 @@ export type { ResponseData } from "./types/inspectionTypes";
 export function useResponseHandling(inspectionId: string | undefined, setResponses: (responses: Record<string, any>) => void) {
   const [savingData, setSavingData] = useState(false);
 
-  // Função otimizada para garantir estrutura consistente das respostas
+  // Função melhorada para garantir que as respostas tenham atualizações corretas
   const handleResponseChange = useCallback((questionId: string, data: any) => {
     setResponses((prev) => {
-      const currentResponse = prev[questionId] || {};
-
-      // Fatore apenas value e mediaAnalysisResults, o resto vai explicitamente (mediaUrls..)
-      let cleanMediaAnalysisResults = (data?.mediaAnalysisResults && typeof data.mediaAnalysisResults === "object")
-        ? JSON.parse(JSON.stringify(data.mediaAnalysisResults))
-        : (currentResponse.mediaAnalysisResults && typeof currentResponse.mediaAnalysisResults === "object")
-          ? JSON.parse(JSON.stringify(currentResponse.mediaAnalysisResults))
-          : {};
-
-      // Monta o objeto resposta de acordo com os campos esperados
-      const safeData = {
-        value: data?.value !== undefined ? data.value : currentResponse.value,
-        mediaUrls: Array.isArray(data?.mediaUrls) ? [...data.mediaUrls] :
-          Array.isArray(currentResponse.mediaUrls) ? [...currentResponse.mediaUrls] : [],
-        mediaAnalysisResults: cleanMediaAnalysisResults,
-        // Exclui possíveis subChecklistResponses com referência recursiva!:
-        ...(data ? Object.fromEntries(Object.entries(data).filter(([k]) => k !== "subChecklistResponses")) : {}),
-        updatedAt: new Date().toISOString()
-      };
-
-      // Corrige referência circular e limpa subChecklistResponses dos analysis
-      for (const key in safeData.mediaAnalysisResults) {
-        if (safeData.mediaAnalysisResults[key] && typeof safeData.mediaAnalysisResults[key] === "object") {
-          if (safeData.mediaAnalysisResults[key].subChecklistResponses) {
-            delete safeData.mediaAnalysisResults[key].subChecklistResponses;
-          }
-        }
+      // Certifique-se de que estamos trabalhando com uma cópia do objeto de resposta atual
+      const currentResponse = prev[questionId] ? {...prev[questionId]} : {};
+      
+      // Se data é um objeto, spread suas propriedades para a resposta atual
+      // Se não, assume que é um valor simples para o campo value
+      const updatedResponse = typeof data === 'object' && data !== null
+        ? { ...currentResponse, ...data, updatedAt: new Date().toISOString() }
+        : { ...currentResponse, value: data, updatedAt: new Date().toISOString() };
+      
+      // Garantir que mediaUrls seja sempre um array
+      if (updatedResponse.mediaUrls) {
+        updatedResponse.mediaUrls = [...updatedResponse.mediaUrls];
+      } else if (data && data.mediaUrls) {
+        updatedResponse.mediaUrls = [...data.mediaUrls];
+      } else if (!updatedResponse.mediaUrls) {
+        updatedResponse.mediaUrls = [];
       }
-
-      // Detecta se mudou mesmo
-      const hasChanged = JSON.stringify(currentResponse) !== JSON.stringify(safeData);
-
-      if (!hasChanged) {
-        console.log(`[useResponseHandling] Sem mudanças para questão ${questionId}, ignorando atualização`);
-        return prev;
-      }
-
+      
+      // Console log para debugging
       console.log(`[useResponseHandling] Atualizando resposta para questão ${questionId}:`, 
-        { anterior: currentResponse, nova: safeData });
-
+        { anterior: currentResponse, nova: updatedResponse });
+      
+      // Retornar um novo objeto de respostas com a resposta atualizada
       return {
         ...prev,
-        [questionId]: safeData
+        [questionId]: updatedResponse
       };
     });
   }, [setResponses]);

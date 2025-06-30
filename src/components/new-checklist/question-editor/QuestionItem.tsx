@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -115,10 +114,7 @@ export function QuestionItem({
       order: newSubitems.length,
       parentQuestionId: question.id,
       options: [],
-      groupId: question.groupId,
-      level: (question.level || 0) + 1,
-      path: `${question.path || question.id}/${Date.now()}`,
-      isConditional: false
+      groupId: question.groupId
     };
     
     newSubitems.push(newSubitem);

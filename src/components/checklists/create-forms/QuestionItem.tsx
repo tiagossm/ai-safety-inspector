@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -5,12 +6,23 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Trash2 } from "lucide-react";
-import { ResponseTypeSelector } from "@/components/common/ResponseTypeSelector";
-import { 
-  StandardResponseType,
-  convertToDatabaseType,
-  convertToFrontendType
-} from "@/types/responseTypes";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+// Question type options with descriptions
+const QUESTION_TYPES = [
+  { value: "sim/não", label: "Sim/Não" },
+  { value: "numérico", label: "Numérico" },
+  { value: "texto", label: "Texto" },
+  { value: "foto", label: "Foto" },
+  { value: "assinatura", label: "Assinatura" },
+  { value: "múltipla escolha", label: "Múltipla Escolha" }
+];
 
 interface QuestionItemProps {
   index: number;
@@ -32,16 +44,6 @@ interface QuestionItemProps {
 }
 
 export function QuestionItem({ index, question, onRemove, onChange }: QuestionItemProps) {
-  // Converte o tipo do banco para o frontend para exibição
-  const frontendType = convertToFrontendType(question.type);
-
-  const handleResponseTypeChange = (frontendType: StandardResponseType) => {
-    // Enviar o código interno em inglês para o backend
-    const dbType = convertToDatabaseType(frontendType);
-    console.log(`QuestionItem: Enviando tipo para backend: ${frontendType} -> ${dbType}`);
-    onChange(index, "type", dbType);
-  };
-
   return (
     <Card>
       <CardContent className="p-4">
@@ -67,11 +69,21 @@ export function QuestionItem({ index, question, onRemove, onChange }: QuestionIt
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor={`type-${index}`}>Tipo de Resposta</Label>
-              <ResponseTypeSelector
-                value={frontendType}
-                onChange={handleResponseTypeChange}
-                showDescriptions={true}
-              />
+              <Select
+                value={question.type}
+                onValueChange={(value) => onChange(index, "type", value)}
+              >
+                <SelectTrigger id={`type-${index}`}>
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {QUESTION_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="space-y-4">

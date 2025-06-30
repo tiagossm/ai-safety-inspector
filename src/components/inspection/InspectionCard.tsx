@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { BadgePriority } from "@/components/ui/badge-priority";
 import { BadgeStatus } from "@/components/ui/badge-status";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { CalendarIcon, ClipboardList, MapPin, Eye, MoreHorizontal, Trash, FileText, Calendar } from "lucide-react";
+import { CalendarIcon, ClipboardList, MapPin, Eye, MoreHorizontal, Trash, FileText } from "lucide-react";
 import { InspectionDetails } from "@/types/newChecklist";
-import { formatDistance, format } from "date-fns";
+import { formatDistance } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   DropdownMenu,
@@ -16,7 +16,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
-import { PDFReportButton } from './PDFReportButton';
 
 interface InspectionCardProps {
   inspection: InspectionDetails;
@@ -143,29 +142,25 @@ export function InspectionCard({
           </div>
         </div>
         
-        <div className="flex items-center justify-between pt-3 border-t">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Calendar className="w-3 h-3" />
-            <span>{format(new Date(inspection.createdAt), "dd/MM/yyyy", { locale: ptBR })}</span>
-            {inspection.location && (
-              <>
-                <MapPin className="w-3 h-3 ml-2" />
-                <span>{inspection.location}</span>
-              </>
-            )}
+        <div className="flex items-center justify-between mt-4 pt-3 border-t">
+          <div className="flex items-center gap-2">
+            <Avatar className="h-6 w-6">
+              <AvatarFallback className="text-xs">
+                {getInitials(inspection.responsible?.name)}
+              </AvatarFallback>
+            </Avatar>
+            <span className="text-xs truncate max-w-[100px]">
+              {inspection.responsible?.name || "Não atribuído"}
+            </span>
           </div>
           
           <div className="flex items-center gap-2">
-            <PDFReportButton 
-              inspectionId={inspection.id}
-              size="sm"
-              variant="outline"
-            />
+            <BadgePriority variant={getPriorityVariant()}>{getPriorityText()}</BadgePriority>
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <MoreHorizontal className="w-4 h-4" />
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                  <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">

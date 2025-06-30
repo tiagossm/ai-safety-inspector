@@ -1,192 +1,104 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { FileCheck, Plus, Loader2, Sparkles } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SubChecklistEditor } from "./SubChecklistEditor";
 import { SubChecklistAIGenerator } from "./SubChecklistAIGenerator";
+import { List, Sparkles } from "lucide-react";
 import { ChecklistQuestion } from "@/types/newChecklist";
-import { toast } from "sonner";
 
 interface SubChecklistButtonProps {
   parentQuestionId: string;
   hasSubChecklist: boolean;
-  subChecklistId?: string;
+  subChecklistId?: string | null;
   onSubChecklistCreated: (subChecklistId: string) => void;
-  parentQuestion: ChecklistQuestion;
 }
 
 export function SubChecklistButton({
   parentQuestionId,
   hasSubChecklist,
   subChecklistId,
-  onSubChecklistCreated,
-  parentQuestion
+  onSubChecklistCreated
 }: SubChecklistButtonProps) {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-  const [subChecklistTitle, setSubChecklistTitle] = useState("");
-  const [subChecklistDescription, setSubChecklistDescription] = useState("");
-  const [activeTab, setActiveTab] = useState("manual");
-
-  const handleCreateSubChecklist = async () => {
-    if (!subChecklistTitle.trim()) {
-      toast.error("Título do sub-checklist é obrigatório");
-      return;
-    }
-
-    setIsCreating(true);
-    
-    try {
-      // Simular criação do sub-checklist
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const newSubChecklistId = `sub-${Date.now()}`;
-      
-      // Salvar informações do sub-checklist no localStorage para simulação
-      const subChecklistData = {
-        id: newSubChecklistId,
-        title: subChecklistTitle,
-        description: subChecklistDescription,
-        parentQuestionId,
-        createdAt: new Date().toISOString()
-      };
-      
-      const existingSubChecklists = JSON.parse(localStorage.getItem('subChecklists') || '[]');
-      existingSubChecklists.push(subChecklistData);
-      localStorage.setItem('subChecklists', JSON.stringify(existingSubChecklists));
-      
-      onSubChecklistCreated(newSubChecklistId);
-      setIsDialogOpen(false);
-      setSubChecklistTitle("");
-      setSubChecklistDescription("");
-      
-      toast.success("Sub-checklist criado com sucesso!");
-    } catch (error) {
-      console.error("Erro ao criar sub-checklist:", error);
-      toast.error("Erro ao criar sub-checklist");
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
-  const handleEditSubChecklist = () => {
-    toast.info("Função de edição de sub-checklist será implementada em breve");
-  };
-
-  if (hasSubChecklist && subChecklistId) {
-    return (
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={handleEditSubChecklist}
-        className="text-blue-600 border-blue-200 hover:bg-blue-50"
-      >
-        <FileCheck className="h-4 w-4 mr-2" />
-        Editar Sub-checklist
-      </Button>
-    );
-  }
+  const [open, setOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"manual" | "ai">("manual");
+  const descriptionId = "subchecklist-description";
 
   return (
-    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <DialogTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="text-gray-600 hover:text-blue-600"
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setOpen(true)}
+        className="mt-2 w-full flex items-center justify-center gap-2"
+      >
+        <List className="h-4 w-4" />
+        {hasSubChecklist 
+          ? "Editar Sub-checklist" 
+          : "Adicionar Sub-checklist"}
+      </Button>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent 
+          className="max-w-3xl"
+          aria-describedby={descriptionId}
         >
-          <Plus className="h-4 w-4 mr-2" />
-          Adicionar Sub-checklist
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Criar Sub-checklist</DialogTitle>
-        </DialogHeader>
-        
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="manual">Manual</TabsTrigger>
-            <TabsTrigger value="ai">
-              <Sparkles className="h-4 w-4 mr-2" />
-              Com IA
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="manual" className="space-y-4">
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="title" className="text-right">
-                  Título
-                </Label>
-                <Input
-                  id="title"
-                  value={subChecklistTitle}
-                  onChange={(e) => setSubChecklistTitle(e.target.value)}
-                  className="col-span-3"
-                  placeholder="Nome do sub-checklist"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="description" className="text-right">
-                  Descrição
-                </Label>
-                <Textarea
-                  id="description"
-                  value={subChecklistDescription}
-                  onChange={(e) => setSubChecklistDescription(e.target.value)}
-                  className="col-span-3"
-                  placeholder="Descrição opcional"
-                  rows={3}
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsDialogOpen(false)}
-                disabled={isCreating}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="button"
-                onClick={handleCreateSubChecklist}
-                disabled={isCreating || !subChecklistTitle.trim()}
-              >
-                {isCreating ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Criando...
-                  </>
-                ) : (
-                  <>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Criar
-                  </>
-                )}
-              </Button>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="ai" className="space-y-4">
-            <SubChecklistAIGenerator
-              parentQuestion={parentQuestion}
-              onSubChecklistCreated={(id) => {
-                onSubChecklistCreated(id);
-                setIsDialogOpen(false);
-              }}
-            />
-          </TabsContent>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
+          <DialogHeader>
+            <DialogTitle>
+              {hasSubChecklist ? "Editar Sub-checklist" : "Criar Sub-checklist"}
+            </DialogTitle>
+            <DialogDescription id={descriptionId}>
+              Crie uma lista de verificação aninhada que será preenchida durante a inspeção.
+            </DialogDescription>
+          </DialogHeader>
+
+          <Tabs value={activeTab} onValueChange={(tab) => setActiveTab(tab as "manual" | "ai")}>
+            <TabsList className="grid grid-cols-2 mb-4">
+              <TabsTrigger value="manual" className="flex items-center gap-2">
+                <List className="h-4 w-4" />
+                <span>Criação Manual</span>
+              </TabsTrigger>
+              <TabsTrigger value="ai" className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4" />
+                <span>Gerar com IA</span>
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="manual">
+              <SubChecklistEditor
+                parentQuestionId={parentQuestionId}
+                existingSubChecklistId={subChecklistId}
+                onSubChecklistCreated={(id) => {
+                  onSubChecklistCreated(id);
+                  setOpen(false);
+                }}
+              />
+            </TabsContent>
+
+            <TabsContent value="ai">
+              <SubChecklistAIGenerator
+                parentQuestion={{
+                  id: parentQuestionId,
+                  text: "Pergunta principal",
+                  responseType: "yes_no",
+                  isRequired: true,
+                  weight: 1,
+                  order: 0,
+                  allowsPhoto: false,
+                  allowsVideo: false,
+                  allowsAudio: false,
+                  allowsFiles: false
+                } as ChecklistQuestion}
+                onSubChecklistCreated={(id) => {
+                  onSubChecklistCreated(id);
+                  setOpen(false);
+                }}
+              />
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

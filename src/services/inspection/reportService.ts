@@ -4,7 +4,6 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
-import { toast } from "sonner";
 
 // Interface for report generation option
 export interface ReportOptions {
@@ -111,14 +110,23 @@ export async function generateInspectionPDF(options: ReportOptions): Promise<str
       }
     }
     
-    // Handle responsible data with fixed field reference
-    let responsibleName = "N/A";
-    if (inspection?.responsible_ids && Array.isArray(inspection.responsible_ids) && inspection.responsible_ids.length > 0) {
-      // For array of IDs, we would need to fetch the responsible names separately
-      // For now, just indicate there are responsible people assigned
-      responsibleName = `${inspection.responsible_ids.length} responsável(eis) atribuído(s)`;
+    // Safely check for responsible data with comprehensive type narrowing
+    if (inspection && 
+        'responsible' in inspection && 
+        inspection.responsible !== null && 
+        typeof inspection.responsible === 'object') {
+      // Use a more robust type guard to avoid 'never' type issues
+      const responsibleObj = inspection.responsible as Record<string, any>;
+      if (responsibleObj && 
+          'name' in responsibleObj && 
+          typeof responsibleObj.name === 'string') {
+        doc.text(`Responsible: ${responsibleObj.name}`, 14, 63);
+      } else {
+        doc.text(`Responsible: N/A`, 14, 63);
+      }
+    } else {
+      doc.text(`Responsible: N/A`, 14, 63);
     }
-    doc.text(`Responsible: ${responsibleName}`, 14, 63);
     
     if (inspection?.checklist) {
       doc.text(`Checklist: ${inspection.checklist.title || "N/A"}`, 14, 70);
@@ -134,32 +142,21 @@ export async function generateInspectionPDF(options: ReportOptions): Promise<str
     const tableData = (responses || []).map((response: any) => {
       let answer: string;
       
-      if (response.answer && typeof response.answer === 'object') {
-        // Handle new format where answer is an object with value property
-        const answerValue = response.answer.value;
-        if (typeof answerValue === 'boolean') {
-          answer = answerValue ? "Sim" : "Não";
-        } else {
-          answer = String(answerValue || "Sem resposta");
-        }
-      } else {
-        // Handle legacy format
-        switch (response.question?.tipo_resposta) {
-          case "sim/não":
-            answer = response.answer === "sim" ? "Sim" : "Não";
-            break;
-          default:
-            answer = response.answer || "Sem resposta";
-        }
+      switch (response.question?.tipo_resposta) {
+        case "sim/não":
+          answer = response.answer === "sim" ? "Yes" : "No";
+          break;
+        default:
+          answer = response.answer || "No response";
       }
       
       const row = [
-        response.question?.pergunta || "Pergunta desconhecida",
+        response.question?.pergunta || "Unknown Question",
         answer
       ];
       
-      if (includeComments && response.comments) {
-        row.push(response.comments);
+      if (includeComments && response.notes) {
+        row.push(response.notes);
       } else {
         row.push("");
       }
@@ -177,14 +174,14 @@ export async function generateInspectionPDF(options: ReportOptions): Promise<str
     });
     
     // Create header for the table
-    const tableHeaders = ["Pergunta", "Resposta"];
+    const tableHeaders = ["Question", "Response"];
     
     if (includeComments) {
-      tableHeaders.push("Comentários");
+      tableHeaders.push("Comments");
     }
     
     if (includeActionPlans) {
-      tableHeaders.push("Plano de Ação");
+      tableHeaders.push("Action Plan");
     }
     
     autoTable(doc, {
@@ -197,7 +194,7 @@ export async function generateInspectionPDF(options: ReportOptions): Promise<str
       didDrawPage: function(data) {
         // Header
         doc.setFontSize(10);
-        doc.text("Gerado em " + new Date().toLocaleDateString(), 14, 10);
+        doc.text("Generated on " + new Date().toLocaleDateString(), 14, 10);
       }
     });
     
@@ -206,14 +203,14 @@ export async function generateInspectionPDF(options: ReportOptions): Promise<str
       const finalY = (doc as any).lastAutoTable.finalY || 200;
       
       doc.setFontSize(14);
-      doc.text("Assinaturas", 14, finalY + 10);
+      doc.text("Signatures", 14, finalY + 10);
       
       let yPos = finalY + 20;
       
       for (let i = 0; i < signatures.length; i++) {
         const signature = signatures[i] as SignatureType | null;
         
-        if (!signature) continue;
+        if (!signature) continue; // Skip if signature is null or undefined
         
         // Check if we need to add a new page
         if (yPos > 270) {
@@ -231,7 +228,7 @@ export async function generateInspectionPDF(options: ReportOptions): Promise<str
             doc.setFontSize(10);
             
             // Get signer name with proper null checks
-            let signerName = "Desconhecido";
+            let signerName = "Unknown";
             
             if (signature.signer_name) {
               signerName = signature.signer_name;
@@ -241,15 +238,15 @@ export async function generateInspectionPDF(options: ReportOptions): Promise<str
               signature.users !== null &&
               'name' in signature.users
             ) {
-              signerName = signature.users.name || "Desconhecido";
+              signerName = signature.users.name || "Unknown";
             }
             
-            doc.text(`Assinado por: ${signerName}`, 14, yPos + 35);
+            doc.text(`Signed by: ${signerName}`, 14, yPos + 35);
             
             // Handle signed_at date with proper null check
             if (signature.signed_at) {
               const signedDate = new Date(signature.signed_at).toLocaleDateString();
-              doc.text(`Data: ${signedDate}`, 14, yPos + 42);
+              doc.text(`Date: ${signedDate}`, 14, yPos + 42);
             }
             
             yPos += 50;
@@ -265,7 +262,7 @@ export async function generateInspectionPDF(options: ReportOptions): Promise<str
     const url = URL.createObjectURL(blob);
     
     // Generate filename
-    const filename = `inspecao-${inspectionId.substring(0, 8)}.pdf`;
+    const filename = `inspection-${inspectionId.substring(0, 8)}.pdf`;
     
     // Trigger download
     downloadReport(url, filename);
@@ -307,53 +304,44 @@ export async function generateInspectionExcel(options: ReportOptions): Promise<s
     
     // Add inspection details sheet
     const detailsData = [
-      ["Relatório de Inspeção", ""],
-      ["Data", new Date().toLocaleDateString()],
-      ["ID da Inspeção", inspectionId],
-      ["Empresa", inspection?.company?.fantasy_name || "N/A"],
+      ["Inspection Report", ""],
+      ["Date", new Date().toLocaleDateString()],
+      ["Inspection ID", inspectionId],
+      ["Company", inspection?.company?.fantasy_name || "N/A"],
       ["CNPJ", inspection?.company?.cnpj || "N/A"],
-      ["Responsável", getResponsibleName(inspection)],
+      ["Responsible", getResponsibleName(inspection)],
       ["Checklist", inspection?.checklist?.title || "N/A"],
       ["Status", inspection?.status || "N/A"],
     ];
     
     const detailsSheet = XLSX.utils.aoa_to_sheet(detailsData);
-    XLSX.utils.book_append_sheet(workbook, detailsSheet, "Resumo");
+    XLSX.utils.book_append_sheet(workbook, detailsSheet, "Overview");
     
     // Prepare responses data
-    const responsesHeaders = ["Pergunta", "Resposta"];
-    if (includeComments) responsesHeaders.push("Comentários");
-    if (includeActionPlans) responsesHeaders.push("Plano de Ação");
+    const responsesHeaders = ["Question", "Response"];
+    if (includeComments) responsesHeaders.push("Comments");
+    if (includeActionPlans) responsesHeaders.push("Action Plan");
     
     const responsesData = [responsesHeaders];
     
     (responses || []).forEach((response: any) => {
       let answer: string;
       
-      if (response.answer && typeof response.answer === 'object') {
-        const answerValue = response.answer.value;
-        if (typeof answerValue === 'boolean') {
-          answer = answerValue ? "Sim" : "Não";
-        } else {
-          answer = String(answerValue || "Sem resposta");
-        }
-      } else {
-        switch (response.question?.tipo_resposta) {
-          case "sim/não":
-            answer = response.answer === "sim" ? "Sim" : "Não";
-            break;
-          default:
-            answer = response.answer || "Sem resposta";
-        }
+      switch (response.question?.tipo_resposta) {
+        case "sim/não":
+          answer = response.answer === "sim" ? "Yes" : "No";
+          break;
+        default:
+          answer = response.answer || "No response";
       }
       
       const row = [
-        response.question?.pergunta || "Pergunta desconhecida",
+        response.question?.pergunta || "Unknown Question",
         answer
       ];
       
       if (includeComments) {
-        row.push(response.comments || "");
+        row.push(response.notes || "");
       }
       
       if (includeActionPlans) {
@@ -371,7 +359,7 @@ export async function generateInspectionExcel(options: ReportOptions): Promise<s
     });
     
     const responsesSheet = XLSX.utils.aoa_to_sheet(responsesData);
-    XLSX.utils.book_append_sheet(workbook, responsesSheet, "Respostas");
+    XLSX.utils.book_append_sheet(workbook, responsesSheet, "Responses");
     
     // Generate Excel file
     const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
@@ -379,7 +367,7 @@ export async function generateInspectionExcel(options: ReportOptions): Promise<s
     const url = URL.createObjectURL(blob);
     
     // Generate filename
-    const filename = `inspecao-${inspectionId.substring(0, 8)}.xlsx`;
+    const filename = `inspection-${inspectionId.substring(0, 8)}.xlsx`;
     
     // Trigger download
     downloadReport(url, filename);
@@ -420,50 +408,41 @@ export async function generateInspectionCSV(options: ReportOptions): Promise<str
     const csvData = [];
     
     // Add inspection details
-    csvData.push(["Relatório de Inspeção"]);
-    csvData.push(["Data", new Date().toLocaleDateString()]);
-    csvData.push(["ID da Inspeção", inspectionId]);
-    csvData.push(["Empresa", inspection?.company?.fantasy_name || "N/A"]);
+    csvData.push(["Inspection Report"]);
+    csvData.push(["Date", new Date().toLocaleDateString()]);
+    csvData.push(["Inspection ID", inspectionId]);
+    csvData.push(["Company", inspection?.company?.fantasy_name || "N/A"]);
     csvData.push(["CNPJ", inspection?.company?.cnpj || "N/A"]);
-    csvData.push(["Responsável", getResponsibleName(inspection)]);
+    csvData.push(["Responsible", getResponsibleName(inspection)]);
     csvData.push(["Checklist", inspection?.checklist?.title || "N/A"]);
     csvData.push(["Status", inspection?.status || "N/A"]);
     csvData.push([]);  // Empty row for separation
     
     // Add response headers
-    const headers = ["Pergunta", "Resposta"];
-    if (includeComments) headers.push("Comentários");
-    if (includeActionPlans) headers.push("Plano de Ação");
+    const headers = ["Question", "Response"];
+    if (includeComments) headers.push("Comments");
+    if (includeActionPlans) headers.push("Action Plan");
     csvData.push(headers);
     
     // Add response data
     (responses || []).forEach((response: any) => {
       let answer: string;
       
-      if (response.answer && typeof response.answer === 'object') {
-        const answerValue = response.answer.value;
-        if (typeof answerValue === 'boolean') {
-          answer = answerValue ? "Sim" : "Não";
-        } else {
-          answer = String(answerValue || "Sem resposta");
-        }
-      } else {
-        switch (response.question?.tipo_resposta) {
-          case "sim/não":
-            answer = response.answer === "sim" ? "Sim" : "Não";
-            break;
-          default:
-            answer = response.answer || "Sem resposta";
-        }
+      switch (response.question?.tipo_resposta) {
+        case "sim/não":
+          answer = response.answer === "sim" ? "Yes" : "No";
+          break;
+        default:
+          answer = response.answer || "No response";
       }
       
       const row = [
-        response.question?.pergunta || "Pergunta desconhecida",
+        response.question?.pergunta || "Unknown Question",
         answer
       ];
       
       if (includeComments) {
-        row.push(response.comments || "");
+        row.push(response.notes || "");
       }
       
       if (includeActionPlans) {
@@ -486,7 +465,7 @@ export async function generateInspectionCSV(options: ReportOptions): Promise<str
     const url = URL.createObjectURL(blob);
     
     // Generate filename
-    const filename = `inspecao-${inspectionId.substring(0, 8)}.csv`;
+    const filename = `inspection-${inspectionId.substring(0, 8)}.csv`;
     
     // Trigger download
     downloadReport(url, filename);
@@ -502,8 +481,17 @@ export async function generateInspectionCSV(options: ReportOptions): Promise<str
  * Helper function to safely extract responsible name from inspection data
  */
 function getResponsibleName(inspection: any): string {
-  if (inspection?.responsible_ids && Array.isArray(inspection.responsible_ids) && inspection.responsible_ids.length > 0) {
-    return `${inspection.responsible_ids.length} responsável(eis) atribuído(s)`;
+  if (inspection && 
+      'responsible' in inspection && 
+      inspection.responsible !== null && 
+      typeof inspection.responsible === 'object') {
+    // Use a more robust type guard to avoid 'never' type issues
+    const responsibleObj = inspection.responsible as Record<string, any>;
+    if (responsibleObj && 
+        'name' in responsibleObj && 
+        typeof responsibleObj.name === 'string') {
+      return responsibleObj.name;
+    }
   }
   return "N/A";
 }
@@ -517,6 +505,7 @@ async function fetchInspectionData(inspectionId: string) {
     .select(`
       *,
       company:company_id (fantasy_name, cnpj, cnae),
+      responsible:responsible_id (name),
       checklist:checklist_id (title, description)
     `)
     .eq('id', inspectionId)
@@ -524,14 +513,14 @@ async function fetchInspectionData(inspectionId: string) {
 }
 
 /**
- * Fetch inspection responses from the database - Updated to use new table
+ * Fetch inspection responses from the database
  */
 async function fetchInspectionResponses(inspectionId: string) {
   return await supabase
-    .from('checklist_item_responses')
+    .from('inspection_responses')
     .select(`
       *,
-      question:checklist_item_id (pergunta, tipo_resposta)
+      question:question_id (pergunta, tipo_resposta)
     `)
     .eq('inspection_id', inspectionId);
 }
@@ -580,19 +569,19 @@ export function generateMockPDF(inspectionId: string, inspectionData: any): void
     
     // Add title
     doc.setFontSize(20);
-    doc.text("Relatório de Inspeção", 14, 22);
+    doc.text("Inspection Report", 14, 22);
     
     // Add inspection details
     doc.setFontSize(12);
-    doc.text(`Data: ${new Date().toLocaleDateString()}`, 14, 35);
-    doc.text(`ID da Inspeção: ${inspectionId.substring(0, 8)}`, 14, 42);
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, 35);
+    doc.text(`Inspection ID: ${inspectionId.substring(0, 8)}`, 14, 42);
     
     if (inspectionData.company) {
-      doc.text(`Empresa: ${inspectionData.company.name || "N/A"}`, 14, 49);
+      doc.text(`Company: ${inspectionData.company.name || "N/A"}`, 14, 49);
     }
     
-    if (inspectionData.responsible_ids) {
-      doc.text(`Responsáveis: ${inspectionData.responsible_ids.length} atribuído(s)`, 14, 56);
+    if (inspectionData.responsible) {
+      doc.text(`Responsible: ${inspectionData.responsible.name || "N/A"}`, 14, 56);
     }
     
     if (inspectionData.checklist) {
@@ -603,12 +592,12 @@ export function generateMockPDF(inspectionId: string, inspectionData: any): void
     
     // Add a simple table with sample data
     autoTable(doc, {
-      head: [['Pergunta', 'Resposta']],
+      head: [['Question', 'Response']],
       body: [
-        ['O equipamento está bem mantido?', 'Sim'],
-        ['Os protocolos de segurança estão sendo seguidos?', 'Não'],
-        ['O ambiente está limpo?', 'Sim'],
-        ['Há riscos visíveis?', 'Não'],
+        ['Is equipment properly maintained?', 'Yes'],
+        ['Are safety protocols being followed?', 'No'],
+        ['Is the environment clean?', 'Yes'],
+        ['Are there any visible hazards?', 'No'],
       ],
       startY: 80,
     });
@@ -618,35 +607,11 @@ export function generateMockPDF(inspectionId: string, inspectionData: any): void
     const url = URL.createObjectURL(blob);
     
     // Generate filename
-    const filename = `inspecao-${inspectionId.substring(0, 8)}.pdf`;
+    const filename = `inspection-${inspectionId.substring(0, 8)}.pdf`;
     
     // Trigger download
     downloadReport(url, filename);
   } catch (error) {
     console.error("Error generating mock PDF:", error);
-  }
-}
-
-/**
- * Generate PDF report using react-pdf (NEW METHOD)
- */
-export async function generateInspectionPDFReport(inspectionId: string): Promise<string | null> {
-  try {
-    const { generateInspectionPDF } = await import('./pdfReportService');
-    
-    const result = await generateInspectionPDF(inspectionId);
-    
-    toast.success('Relatório PDF gerado com sucesso!', {
-      description: `Arquivo: ${result.fileName} (${(result.size / 1024 / 1024).toFixed(2)}MB)`
-    });
-    
-    return result.url;
-    
-  } catch (error) {
-    console.error("Erro ao gerar relatório PDF:", error);
-    toast.error("Erro ao gerar relatório PDF", {
-      description: error instanceof Error ? error.message : "Erro desconhecido"
-    });
-    throw error;
   }
 }

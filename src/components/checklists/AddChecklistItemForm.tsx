@@ -6,15 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Plus, Image, Video, Mic, Info, Scale, Link2, Calendar } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ResponseTypeSelector } from "@/components/common/ResponseTypeSelector";
-import { 
-  StandardResponseType, 
-  convertToDatabaseType,
-  TYPES_REQUIRING_OPTIONS 
-} from "@/types/responseTypes";
 
 interface AddChecklistItemFormProps {
   checklistId: string;
@@ -45,39 +40,10 @@ export default function AddChecklistItemForm({
   const [newOption, setNewOption] = useState("");
   const [options, setOptions] = useState<string[]>([]);
 
-  // Converte o tipo do banco para o frontend para exibição
-  const currentFrontendType = (() => {
-    switch (newItem.tipo_resposta) {
-      case "sim/não": return "yes_no";
-      case "texto": return "text";
-      case "numérico": return "numeric";
-      case "seleção múltipla": return "multiple_choice";
-      case "foto": return "photo";
-      case "assinatura": return "signature";
-      case "data": return "date";
-      case "hora": return "time";
-      case "data e hora": return "datetime";
-      default: return "text";
-    }
-  })();
-
-  // Verifica se o tipo atual requer opções
-  const requiresOptions = TYPES_REQUIRING_OPTIONS.includes(currentFrontendType as StandardResponseType);
-
   // Atualiza o showOptions quando o tipo de resposta muda
   useEffect(() => {
-    setShowOptions(requiresOptions);
-  }, [requiresOptions]);
-
-  const handleResponseTypeChange = (frontendType: StandardResponseType) => {
-    const dbType = convertToDatabaseType(frontendType);
-    setNewItem({...newItem, tipo_resposta: dbType});
-    
-    // Limpa opções se o novo tipo não precisar
-    if (!TYPES_REQUIRING_OPTIONS.includes(frontendType)) {
-      setOptions([]);
-    }
-  };
+    setShowOptions(newItem.tipo_resposta === "seleção múltipla");
+  }, [newItem.tipo_resposta]);
 
   const handleAddItem = () => {
     if (!newItem.pergunta) return;
@@ -155,11 +121,23 @@ export default function AddChecklistItemForm({
           <div className="grid md:grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="new-type">Tipo de Resposta</Label>
-              <ResponseTypeSelector
-                value={currentFrontendType as StandardResponseType}
-                onChange={handleResponseTypeChange}
-                showDescriptions={true}
-              />
+              <Select 
+                value={newItem.tipo_resposta} 
+                onValueChange={(value: "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla") => 
+                  setNewItem({...newItem, tipo_resposta: value})
+                }
+              >
+                <SelectTrigger id="new-type">
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {questionTypes.map(type => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="grid gap-2">

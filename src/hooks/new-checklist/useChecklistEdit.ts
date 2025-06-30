@@ -1,437 +1,239 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { v4 as uuidv4 } from 'uuid';
-import { supabase } from "@/integrations/supabase/client";
-import {
-  Checklist,
-  ChecklistItem,
-  ChecklistQuestion,
-  ChecklistGroup,
-  DisplayCondition
-} from "@/types/newChecklist";
+import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
+import { useChecklistState } from "./useChecklistState";
+import { useChecklistQuestions } from "./useChecklistQuestions";
+import { useChecklistGroups } from "./useChecklistGroups";
+import { useChecklistSubmit } from "./useChecklistSubmit";
+import { useChecklistValidation } from "./useChecklistValidation";
 import { toast } from "sonner";
-import { useCallback, useState } from "react";
-import { frontendToDatabaseResponseType } from "@/utils/responseTypeMap";
 
-interface UseChecklistEditProps {
-  checklistId?: string;
-}
+export function useChecklistEdit(checklist: any, id: string | undefined) {
+  const navigate = useNavigate();
 
-export function useChecklistEdit(checklistId?: string) {
-  const queryClient = useQueryClient();
-  const [questions, setQuestions] = useState<ChecklistQuestion[]>([]);
-  const [groups, setGroups] = useState<ChecklistGroup[]>([]);
-  const [checklistData, setChecklistData] = useState<Checklist | null>(null);
+  const state = useChecklistState(checklist);
 
-  // Fetch checklist data
-  const { data: checklist, isLoading: isChecklistLoading } = useQuery({
-    queryKey: ["checklist", checklistId],
-    queryFn: async () => {
-      if (!checklistId) return null;
+  const {
+    handleAddQuestion,
+    handleUpdateQuestion,
+    handleDeleteQuestion,
+    toggleAllMediaOptions
+  } = useChecklistQuestions(
+    state.questions,
+    state.setQuestions,
+    state.groups,
+    state.deletedQuestionIds,
+    state.setDeletedQuestionIds
+  );
 
-      const { data, error } = await supabase
-        .from("checklists")
-        .select("*")
-        .eq("id", checklistId)
-        .single();
+  const {
+    handleAddGroup,
+    handleUpdateGroup,
+    handleDeleteGroup,
+    handleDragEnd
+  } = useChecklistGroups(
+    state.groups,
+    state.setGroups,
+    state.questions,
+    state.setQuestions
+  );
 
-      if (error) {
-        console.error("Error fetching checklist:", error);
-        throw error;
-      }
+  const { validateChecklist } = useChecklistValidation();
 
-      // Garantir que o origin seja um valor válido e fazer casting correto
-      const validOrigin: 'manual' | 'ia' | 'csv' = (['manual', 'ia', 'csv'] as const).includes(data.origin as any) 
-        ? (data.origin as 'manual' | 'ia' | 'csv')
-        : 'manual';
+  const { handleSubmit, isSubmitting } = useChecklistSubmit(
+    id,
+    state.title,
+    state.description,
+    state.category,
+    state.isTemplate,
+    state.status,
+    state.questions,
+    state.groups,
+    state.deletedQuestionIds
+  );
 
-      const checklistWithValidOrigin: Checklist = {
-        id: data.id,
-        title: data.title,
-        description: data.description,
-        created_at: data.created_at,
-        updated_at: data.updated_at,
-        status: data.status,
-        status_checklist: data.status_checklist,
-        is_template: data.is_template,
-        user_id: data.user_id,
-        company_id: data.company_id,
-        responsible_id: data.responsible_id,
-        category: data.category,
-        origin: validOrigin,
-        questions: undefined, // Será carregado separadamente
-        groups: undefined, // Será carregado separadamente
-        responsibleName: undefined // Poderia ser carregado com JOIN se necessário
-      };
+  // Improved useEffect to ensure proper data loading from the checklist
+  useEffect(() => {
+    if (checklist) {
+      console.log("Setting initial checklist data:", checklist);
+      state.setTitle(checklist.title || "");
+      state.setDescription(checklist.description || "");
+      state.setCategory(checklist.category || "");
+      state.setIsTemplate(checklist.isTemplate || false);
+      state.setStatus(checklist.status === "inactive" ? "inactive" : "active");
 
-      setChecklistData(checklistWithValidOrigin);
-      return checklistWithValidOrigin;
-    },
-    enabled: !!checklistId,
-  });
-
-  // Fetch questions
-  const { data: fetchedQuestions, isLoading: isQuestionsLoading } = useQuery({
-    queryKey: ["checklist-questions", checklistId],
-    queryFn: async () => {
-      if (!checklistId) return [];
-
-      const { data, error } = await supabase
-        .from("checklist_itens")
-        .select("*")
-        .eq("checklist_id", checklistId)
-        .order("ordem", { ascending: true });
-
-      if (error) {
-        console.error("Error fetching questions:", error);
-        throw error;
-      }
-
-      const typedQuestions = data.map(item => {
-        // Converter display_condition de Json para DisplayCondition
-        let displayCondition: DisplayCondition | undefined;
-        if (item.display_condition) {
-          try {
-            let parsed: any;
-            if (typeof item.display_condition === 'string') {
-              parsed = JSON.parse(item.display_condition);
-            } else if (typeof item.display_condition === 'object' && item.display_condition !== null) {
-              parsed = item.display_condition;
-            }
-            
-            if (parsed && (parsed.parentQuestionId || parsed.expectedValue)) {
-              displayCondition = {
-                parentQuestionId: parsed.parentQuestionId || '',
-                expectedValue: parsed.expectedValue || '',
-                operator: parsed.operator || 'equals',
-                rules: parsed.rules || [],
-                logic: parsed.logic || 'AND'
-              };
-            }
-          } catch (e) {
-            console.error("Error parsing display_condition:", e);
-            displayCondition = undefined;
-          }
-        }
-
-        return {
-          id: item.id,
-          text: item.pergunta,
-          responseType: item.tipo_resposta,
-          isRequired: item.obrigatorio,
-          order: item.ordem,
-          weight: item.weight || 1,
-          allowsPhoto: item.permite_foto || false,
-          allowsVideo: item.permite_video || false,
-          allowsAudio: item.permite_audio || false,
-          allowsFiles: item.permite_files || false,
-          options: Array.isArray(item.opcoes) ? item.opcoes : [],
-          groupId: "default", // Valor padrão até implementarmos grupos completamente
-          level: 0,
-          path: item.id,
-          isConditional: item.is_conditional || false,
-          parentQuestionId: item.parent_item_id,
-          conditionValue: item.condition_value,
-          displayCondition,
-          hasSubChecklist: item.has_subchecklist,
-          subChecklistId: item.sub_checklist_id,
+      // Handle questions and groups properly
+      if (checklist.questions && Array.isArray(checklist.questions) && checklist.questions.length > 0) {
+        console.log(`Checklist has ${checklist.questions.length} questions`);
+        
+        // Adicione este mapeamento para corrigir tipos antigos e traduzidos
+        const normalizeResponseType = (type: string) => {
+          if (!type) return "yes_no";
+          if (type === "hora") return "time";
+          if (type === "data") return "date";
+          if (type === "texto") return "text";
+          if (type === "sim/não") return "yes_no";
+          if (type === "numérico") return "numeric";
+          if (type === "assinatura") return "signature";
+          if (type === "seleção múltipla") return "multiple_choice";
+          if (type === "imagem") return "photo";
+          // já aceita os tipos em inglês também
+          return type;
         };
-      }) as ChecklistQuestion[];
 
-      setQuestions(typedQuestions);
-      return typedQuestions;
-    },
-    enabled: !!checklistId,
-  });
+        if (checklist.groups && Array.isArray(checklist.groups) && checklist.groups.length > 0) {
+          console.log(`Checklist has ${checklist.groups.length} groups`);
+          state.setGroups(checklist.groups);
+          const questionsWithValidGroups = checklist.questions.map((q: any) => ({
+            ...q,
+            groupId: q.groupId || checklist.groups[0].id,
+            responseType: normalizeResponseType(q.responseType || q.tipo_resposta)
+          }));
+          state.setQuestions(questionsWithValidGroups);
+        } else {
+          const defaultGroup: ChecklistGroup = {
+            id: "default",
+            title: "Geral",
+            order: 0
+          };
+          const questionsWithDefaultGroup = checklist.questions.map((q: any) => ({
+            ...q,
+            groupId: "default",
+            responseType: normalizeResponseType(q.responseType || q.tipo_resposta)
+          }));
+          state.setGroups([defaultGroup]);
+          state.setQuestions(questionsWithDefaultGroup);
+        }
+      } else {
+        console.log("No questions found in checklist, creating default");
+        const defaultGroup: ChecklistGroup = {
+          id: "default",
+          title: "Geral",
+          order: 0
+        };
+        const defaultQuestion: ChecklistQuestion = {
+          id: `new-${Date.now()}`,
+          text: "",
+          responseType: "yes_no",
+          isRequired: true,
+          weight: 1,
+          allowsPhoto: false,
+          allowsVideo: false,
+          allowsAudio: false,
+          allowsFiles: false,
+          order: 0,
+          groupId: "default"
+        };
+        state.setGroups([defaultGroup]);
+        state.setQuestions([defaultQuestion]);
+      }
+    }
+  }, [checklist]);
 
-  // Fetch groups
-  const { data: fetchedGroups, isLoading: isGroupsLoading } = useQuery({
-    queryKey: ["checklist-groups", checklistId],
-    queryFn: async () => {
-      if (!checklistId) return [];
+  // Save handler with proper navigation
+  const handleSave = async () => {
+    if (isSubmitting) return false;
+    
+    try {
+      toast.info("Salvando checklist...", { duration: 2000 });
+      const success = await handleSubmit();
+      
+      if (success) {
+        toast.success("Checklist salvo com sucesso!", { duration: 5000 });
+        navigate("/new-checklists"); // Navigate to checklist list on success
+        return true;
+      } else {
+        toast.error("Erro ao salvar checklist", { duration: 5000 });
+        return false;
+      }
+    } catch (error) {
+      console.error("Error saving checklist:", error);
+      toast.error(`Erro ao salvar checklist: ${error instanceof Error ? error.message : "Erro desconhecido"}`, { duration: 5000 });
+      return false;
+    }
+  };
 
-      const { data, error } = await supabase
-        .from("checklist_groups")
-        .select("*")
-        .eq("checklist_id", checklistId)
-        .order("order", { ascending: true });
+  // Start Inspection handler with proper navigation
+  const handleStartInspection = async () => {
+    try {
+      if (!id) {
+        toast.error("É necessário salvar o checklist antes de iniciar a inspeção", { duration: 5000 });
+        return;
+      }
+      
+      toast.info("Preparando inspeção...", { duration: 2000 });
+      
+      // Save checklist first
+      const saveSuccess = await handleSubmit();
+      if (!saveSuccess) {
+        toast.error("Não foi possível salvar o checklist antes de iniciar a inspeção", { duration: 5000 });
+        return;
+      }
+      
+      // Navigate directly to the inspection execution
+      console.log(`Redirecionando para execução da inspeção com checklistId=${id}`);
+      toast.success("Redirecionando para a inspeção...", { duration: 2000 });
+      navigate(`/inspections/${id}/view`);
+    } catch (error) {
+      console.error("Error starting inspection:", error);
+      toast.error(`Erro ao iniciar inspeção: ${error instanceof Error ? error.message : "Erro desconhecido"}`, { duration: 5000 });
+    }
+  };
 
-      if (error) {
-        console.error("Error fetching groups:", error);
-        throw error;
+  const questionsByGroup = useMemo(() => {
+    const result = new Map<string, ChecklistQuestion[]>();
+
+    state.groups.forEach(group => {
+      result.set(group.id, []);
+    });
+
+    state.questions.forEach(question => {
+      const groupId = question.groupId || state.groups[0]?.id || "default";
+      if (!result.has(groupId)) {
+        result.set(groupId, []);
       }
 
-      const typedGroups = data.map(group => ({
-        id: group.id,
-        title: group.title,
-        order: group.order,
-      })) as ChecklistGroup[];
+      const groupQuestions = result.get(groupId) || [];
+      groupQuestions.push(question);
+      result.set(groupId, groupQuestions);
+    });
 
-      setGroups(typedGroups);
-      return typedGroups;
-    },
-    enabled: !!checklistId,
-  });
+    result.forEach((groupQuestions, groupId) => {
+      result.set(
+        groupId,
+        groupQuestions.sort((a, b) => a.order - b.order)
+      );
+    });
 
-  const updateChecklistMutation = useMutation({
-    mutationFn: async (updates: Partial<Checklist>) => {
-      if (!checklistId) throw new Error("Checklist ID is required for updates.");
+    return result;
+  }, [state.questions, state.groups]);
 
-      const { data, error } = await supabase
-        .from("checklists")
-        .update(updates)
-        .eq("id", checklistId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Error updating checklist:", error);
-        throw new Error(`Failed to update checklist: ${error.message}`);
-      }
-
-      // Garantir tipagem correta no retorno também
-      const validOrigin: 'manual' | 'ia' | 'csv' = (['manual', 'ia', 'csv'] as const).includes(data.origin as any) 
-        ? (data.origin as 'manual' | 'ia' | 'csv')
-        : 'manual';
-
-      const typedData: Checklist = {
-        id: data.id,
-        title: data.title,
-        description: data.description,
-        created_at: data.created_at,
-        updated_at: data.updated_at,
-        status: data.status,
-        status_checklist: data.status_checklist,
-        is_template: data.is_template,
-        user_id: data.user_id,
-        company_id: data.company_id,
-        responsible_id: data.responsible_id,
-        category: data.category,
-        origin: validOrigin,
-        questions: undefined, // Será carregado separadamente
-        groups: undefined, // Será carregado separadamente
-        responsibleName: undefined // Poderia ser carregado com JOIN se necessário
-      };
-
-      return typedData;
-    },
-    onSuccess: (data) => {
-      toast.success("Checklist atualizado com sucesso!");
-      queryClient.invalidateQueries({ queryKey: ["checklist", checklistId] });
-      setChecklistData(data);
-    },
-    onError: (error: any) => {
-      toast.error(`Erro ao atualizar checklist: ${error.message || "Unknown error"}`);
-    },
-  });
-
-  const updateQuestionMutation = useMutation({
-    mutationFn: async (question: ChecklistQuestion) => {
-      // Converter DisplayCondition para JSON compatível com Supabase
-      let displayCondition = null;
-      if (question.displayCondition) {
-        displayCondition = {
-          parentQuestionId: question.displayCondition.parentQuestionId || '',
-          expectedValue: question.displayCondition.expectedValue || '',
-          operator: question.displayCondition.operator || 'equals',
-          rules: question.displayCondition.rules || [],
-          logic: question.displayCondition.logic || 'AND'
-        } as Record<string, any>;
-      }
-
-      const { data, error } = await supabase
-        .from("checklist_itens")
-        .update({
-          pergunta: question.text,
-          tipo_resposta: frontendToDatabaseResponseType(question.responseType),
-          obrigatorio: question.isRequired,
-          ordem: question.order,
-          opcoes: question.options,
-          weight: question.weight,
-          permite_foto: question.allowsPhoto,
-          permite_video: question.allowsVideo,
-          permite_audio: question.allowsAudio,
-          permite_files: question.allowsFiles,
-          parent_item_id: question.parentQuestionId,
-          condition_value: question.conditionValue,
-          hint: question.hint,
-          display_condition: displayCondition,
-          is_conditional: question.isConditional,
-          has_subchecklist: question.hasSubChecklist,
-          sub_checklist_id: question.subChecklistId,
-        })
-        .eq("id", question.id)
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Error updating question:", error);
-        throw new Error(`Failed to update question: ${error.message}`);
-      }
-
-      return data as ChecklistItem;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["checklist-questions", checklistId] });
-      toast.success("Pergunta atualizada com sucesso!");
-    },
-    onError: (error: any) => {
-      toast.error(`Erro ao atualizar pergunta: ${error.message || "Unknown error"}`);
-    },
-  });
-
-  const addQuestion = useCallback((groupId: string) => {
-    const newQuestion: ChecklistQuestion = {
-      id: `new-${Date.now()}-${Math.random()}`,
-      text: "",
-      responseType: "yes_no",
-      isRequired: true,
-      weight: 1,
-      allowsPhoto: false,
-      allowsVideo: false,
-      allowsAudio: false,
-      allowsFiles: false,
-      order: questions.length,
-      groupId,
-      level: 0,
-      path: `new-${Date.now()}-${Math.random()}`,
-      isConditional: false,
-      options: []
-    };
-
-    setQuestions(prev => [...prev, newQuestion]);
-    toast.success("Nova pergunta adicionada");
-  }, [questions.length]);
-
-  const deleteQuestionMutation = useMutation({
-    mutationFn: async (questionId: string) => {
-      const { error } = await supabase
-        .from("checklist_itens")
-        .delete()
-        .eq("id", questionId);
-
-      if (error) {
-        console.error("Error deleting question:", error);
-        throw new Error(`Failed to delete question: ${error.message}`);
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["checklist-questions", checklistId] });
-      toast.success("Pergunta excluída com sucesso!");
-    },
-    onError: (error: any) => {
-      toast.error(`Erro ao excluir pergunta: ${error.message || "Unknown error"}`);
-    },
-  });
-
-  const addGroupMutation = useMutation({
-    mutationFn: async (title: string) => {
-      if (!checklistId) throw new Error("Checklist ID is required to add a group.");
-
-      const newGroup = {
-        id: uuidv4(),
-        checklist_id: checklistId,
-        title: title,
-        order: groups.length,
-      };
-
-      const { data, error } = await supabase
-        .from("checklist_groups")
-        .insert(newGroup)
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Error adding group:", error);
-        throw new Error(`Failed to add group: ${error.message}`);
-      }
-
-      return {
-        id: data.id,
-        title: data.title,
-        order: data.order,
-      } as ChecklistGroup;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["checklist-groups", checklistId] });
-      toast.success("Grupo adicionado com sucesso!");
-    },
-    onError: (error: any) => {
-      toast.error(`Erro ao adicionar grupo: ${error.message || "Unknown error"}`);
-    },
-  });
-
-  const updateGroupMutation = useMutation({
-    mutationFn: async (group: ChecklistGroup) => {
-      const { data, error } = await supabase
-        .from("checklist_groups")
-        .update({
-          title: group.title,
-          order: group.order,
-        })
-        .eq("id", group.id)
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Error updating group:", error);
-        throw new Error(`Failed to update group: ${error.message}`);
-      }
-
-      return {
-        id: data.id,
-        title: data.title,
-        order: data.order,
-      } as ChecklistGroup;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["checklist-groups", checklistId] });
-      toast.success("Grupo atualizado com sucesso!");
-    },
-    onError: (error: any) => {
-      toast.error(`Erro ao atualizar grupo: ${error.message || "Unknown error"}`);
-    },
-  });
-
-  const deleteGroupMutation = useMutation({
-    mutationFn: async (groupId: string) => {
-      const { error } = await supabase
-        .from("checklist_groups")
-        .delete()
-        .eq("id", groupId);
-
-      if (error) {
-        console.error("Error deleting group:", error);
-        throw new Error(`Failed to delete group: ${error.message}`);
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["checklist-groups", checklistId] });
-      toast.success("Grupo excluído com sucesso!");
-    },
-    onError: (error: any) => {
-      toast.error(`Erro ao excluir grupo: ${error.message || "Unknown error"}`);
-    },
-  });
+  const nonEmptyGroups = useMemo(() => {
+    return state.groups
+      .filter(group => {
+        const groupQuestions = questionsByGroup.get(group.id) || [];
+        return groupQuestions.length > 0;
+      })
+      .sort((a, b) => a.order - b.order);
+  }, [state.groups, questionsByGroup]);
 
   return {
-    checklist,
-    questions,
-    groups,
-    checklistData,
-    isChecklistLoading,
-    isQuestionsLoading,
-    isGroupsLoading,
-    updateChecklist: updateChecklistMutation.mutate,
-    updateQuestion: updateQuestionMutation.mutate,
-    addQuestion: addQuestion,
-    deleteQuestion: deleteQuestionMutation.mutate,
-    addGroup: addGroupMutation.mutate,
-    updateGroup: updateGroupMutation.mutate,
-    deleteGroup: deleteGroupMutation.mutate,
-    isUpdatingChecklist: updateChecklistMutation.isPending,
-    isUpdatingQuestion: updateQuestionMutation.isPending,
-    isAddingGroup: addGroupMutation.isPending,
-    isUpdatingGroup: updateGroupMutation.isPending,
-    isDeletingGroup: deleteGroupMutation.isPending,
+    ...state,
+    questionsByGroup,
+    nonEmptyGroups,
+    handleAddGroup,
+    handleUpdateGroup,
+    handleDeleteGroup,
+    handleAddQuestion,
+    handleUpdateQuestion,
+    handleDeleteQuestion,
+    handleDragEnd,
+    handleSubmit,
+    handleSave,
+    handleStartInspection,
+    isSubmitting,
+    toggleAllMediaOptions
   };
 }
+
+export default useChecklistEdit;

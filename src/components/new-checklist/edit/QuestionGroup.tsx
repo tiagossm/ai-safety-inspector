@@ -19,6 +19,7 @@ interface QuestionGroupProps {
   onDeleteGroup: (groupId: string) => void;
   dragHandleProps?: any;
   enableAllMedia?: boolean;
+  isSubmitting?: boolean;
 }
 
 export function QuestionGroup({
@@ -30,7 +31,8 @@ export function QuestionGroup({
   onDeleteQuestion,
   onDeleteGroup,
   dragHandleProps,
-  enableAllMedia = false
+  enableAllMedia = false,
+  isSubmitting = false
 }: QuestionGroupProps) {
   const [isOpen, setIsOpen] = useState(true);
 
@@ -117,6 +119,7 @@ export function QuestionGroup({
                 variant="outline"
                 size="sm"
                 onClick={() => onAddQuestion(group.id)}
+                disabled={isSubmitting}
                 className="w-full max-w-xs"
               >
                 <Plus className="h-4 w-4 mr-2" />

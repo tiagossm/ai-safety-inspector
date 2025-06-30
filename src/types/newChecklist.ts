@@ -1,6 +1,3 @@
-
-import { StandardResponseType } from "./responseTypes";
-
 export interface ChecklistWithStats {
   id: string;
   title: string;
@@ -105,50 +102,25 @@ export interface BatchUpdateResult {
   count: number;
 }
 
-// Definindo as interfaces para as condições de exibição com índice de string
-export interface DisplayConditionRule {
-  parentQuestionId: string;
-  expectedValue: string;
-  operator?: 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than';
-  [key: string]: any; // Adiciona índice de string para compatibilidade com Json
-}
-
-export interface DisplayCondition {
-  parentQuestionId: string;
-  expectedValue: string;
-  operator?: 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than';
-  rules?: DisplayConditionRule[];
-  logic?: 'AND' | 'OR';
-  [key: string]: any; // Adiciona índice de string para compatibilidade com Json
-}
-
-// Interface atualizada para usar StandardResponseType e incluir todas as propriedades necessárias
 export interface ChecklistQuestion {
   id: string;
   text: string;
-  responseType: StandardResponseType;
+  responseType: "yes_no" | "text" | "numeric" | "multiple_choice" | "photo" | "signature" | "time" | "date";
   isRequired: boolean;
-  order: number;
+  options?: string[];
   weight: number;
   allowsPhoto: boolean;
   allowsVideo: boolean;
   allowsAudio: boolean;
-  allowsFiles: boolean;
-  groupId: string;
+  allowsFiles?: boolean;
+  order: number;
+  groupId?: string;
+  condition?: string;
+  conditionValue?: string;
   parentQuestionId?: string;
-  level?: number;
-  path?: string;
-  isConditional: boolean;
-  options: string[]; // Mantém compatibilidade
-  multipleChoiceOptions?: import("@/types/multipleChoice").ChecklistItemOption[]; // Opções avançadas
-  hint?: string;
-  displayCondition?: DisplayCondition;
-  conditionalQuestions?: ChecklistQuestion[];
-  // Propriedades para suporte a sub-checklists
   hasSubChecklist?: boolean;
   subChecklistId?: string;
-  // Propriedade para compatibilidade com hooks existentes
-  conditionValue?: string;
+  hint?: string;
 }
 
 // Extended InspectionDetails interface with all required properties
@@ -164,7 +136,7 @@ export interface InspectionDetails {
   responsibleId?: string;
   responsibleName?: string;
   scheduledDate?: string;
-  location?: string;
+  location?: string; // Field for location
   syncStatus?: string;
   metadata?: any;
   title?: string;

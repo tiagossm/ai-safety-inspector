@@ -1,101 +1,92 @@
 
 import { useState, useCallback } from "react";
-import { ChecklistQuestion } from "@/types/newChecklist";
-import { generateUUID } from "@/utils/uuidValidation";
-import { useChecklistValidation } from "./useChecklistValidation";
+import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { toast } from "sonner";
 
 export function useChecklistQuestions(
-  initialQuestions: ChecklistQuestion[],
-  setQuestions: (questions: ChecklistQuestion[]) => void,
-  groups: any[],
+  questions: ChecklistQuestion[],
+  setQuestions: React.Dispatch<React.SetStateAction<ChecklistQuestion[]>>,
+  groups: ChecklistGroup[],
   deletedQuestionIds: string[],
-  setDeletedQuestionIds: (ids: string[]) => void
+  setDeletedQuestionIds: React.Dispatch<React.SetStateAction<string[]>>
 ) {
-  const { validateQuestion, ensureValidOptions } = useChecklistValidation();
+  const [enableAllMedia, setEnableAllMedia] = useState(false);
 
   const handleAddQuestion = useCallback((groupId: string) => {
-    const newQuestionId = generateUUID();
+    const newId = `new-${Date.now()}`;
+    const order = questions.length > 0 
+      ? Math.max(...questions.map(q => q.order)) + 1 
+      : 0;
+
     const newQuestion: ChecklistQuestion = {
-      id: newQuestionId,
+      id: newId,
       text: "",
       responseType: "yes_no",
       isRequired: true,
+      order,
       weight: 1,
-      allowsPhoto: false,
-      allowsVideo: false,
-      allowsAudio: false,
-      allowsFiles: false,
-      order: initialQuestions.length,
-      groupId: groupId,
-      options: [],
-      level: 0,
-      path: newQuestionId,
-      isConditional: false
+      allowsPhoto: enableAllMedia,
+      allowsVideo: enableAllMedia,
+      allowsAudio: enableAllMedia,
+      allowsFiles: enableAllMedia,
+      groupId
     };
-
-    setQuestions([...initialQuestions, newQuestion]);
-    toast.success("Nova pergunta adicionada");
-  }, [initialQuestions, setQuestions]);
+    
+    setQuestions(prevQuestions => [...prevQuestions, newQuestion]);
+    toast.success("Pergunta adicionada", { duration: 5000 });
+    return newId;
+  }, [questions, setQuestions, enableAllMedia]);
 
   const handleUpdateQuestion = useCallback((updatedQuestion: ChecklistQuestion) => {
-    // Validar e corrigir opções se necessário
-    if (updatedQuestion.responseType) {
-      const validOptions = ensureValidOptions(updatedQuestion.responseType, updatedQuestion.options);
-      if (JSON.stringify(validOptions) !== JSON.stringify(updatedQuestion.options)) {
-        updatedQuestion = {
-          ...updatedQuestion,
-          options: validOptions
-        };
-      }
-    }
-
-    const updatedQuestions = initialQuestions.map(q => 
-      q.id === updatedQuestion.id ? updatedQuestion : q
+    setQuestions(prevQuestions => 
+      prevQuestions.map(q => 
+        q.id === updatedQuestion.id ? updatedQuestion : q
+      )
     );
-    
-    setQuestions(updatedQuestions);
-    
-    // Validar a pergunta após atualização
-    const errors = validateQuestion(updatedQuestion);
-    if (errors.length > 0) {
-      toast.error(`Atenção: ${errors[0]}`);
-    }
-  }, [initialQuestions, setQuestions, validateQuestion, ensureValidOptions]);
+  }, [setQuestions]);
 
   const handleDeleteQuestion = useCallback((questionId: string) => {
-    const filteredQuestions = initialQuestions.filter(q => q.id !== questionId);
-    setQuestions(filteredQuestions);
-    
-    // Adicionar à lista de deletados se não for uma pergunta nova
-    if (!questionId.startsWith('new-')) {
-      setDeletedQuestionIds([...deletedQuestionIds, questionId]);
+    // If it's a new question (not yet saved to DB), just remove it
+    if (questionId.startsWith('new-')) {
+      setQuestions(prevQuestions => prevQuestions.filter(q => q.id !== questionId));
+      toast.success("Pergunta removida", { duration: 5000 });
+      return;
     }
     
-    toast.success("Pergunta removida");
-  }, [initialQuestions, setQuestions, deletedQuestionIds, setDeletedQuestionIds]);
+    // For existing questions, mark for deletion
+    setDeletedQuestionIds(prev => [...prev, questionId]);
+    setQuestions(prevQuestions => prevQuestions.filter(q => q.id !== questionId));
+    toast.success("Pergunta removida", { duration: 5000 });
+  }, [setQuestions, setDeletedQuestionIds]);
 
-  const toggleAllMediaOptions = useCallback(() => {
-    const allHaveMedia = initialQuestions.every(q => 
-      q.allowsPhoto && q.allowsVideo && q.allowsAudio && q.allowsFiles
+  // Updated toggle all media options function to include allowsFiles
+  const toggleAllMediaOptions = useCallback((enabled: boolean) => {
+    setEnableAllMedia(enabled);
+    
+    // Update all questions to enable/disable media options
+    setQuestions(prevQuestions => 
+      prevQuestions.map(question => ({
+        ...question,
+        allowsPhoto: enabled,
+        allowsVideo: enabled,
+        allowsAudio: enabled,
+        allowsFiles: enabled
+      }))
     );
     
-    const updatedQuestions = initialQuestions.map(question => ({
-      ...question,
-      allowsPhoto: !allHaveMedia,
-      allowsVideo: !allHaveMedia,
-      allowsAudio: !allHaveMedia,
-      allowsFiles: !allHaveMedia
-    }));
-    
-    setQuestions(updatedQuestions);
-    toast.success(allHaveMedia ? "Mídia desabilitada para todas as perguntas" : "Mídia habilitada para todas as perguntas");
-  }, [initialQuestions, setQuestions]);
+    // Add toast notification
+    if (enabled) {
+      toast.success("Todos os recursos de mídia ativados", { duration: 5000 });
+    } else {
+      toast.success("Todos os recursos de mídia desativados", { duration: 5000 });
+    }
+  }, [setQuestions]);
 
   return {
     handleAddQuestion,
     handleUpdateQuestion,
     handleDeleteQuestion,
-    toggleAllMediaOptions
+    toggleAllMediaOptions,
+    enableAllMedia
   };
 }

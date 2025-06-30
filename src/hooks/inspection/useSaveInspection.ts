@@ -3,7 +3,6 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { INSPECTION_STATUSES } from "@/types/inspection";
 
 // Função auxiliar para converter promessas do Supabase em Promises completas
 const wrapSupabaseCall = <T>(supabasePromise: any): Promise<T> => {
@@ -27,32 +26,22 @@ export const useSaveInspection = () => {
   const [isSaving, setIsSaving] = useState(false);
   const navigate = useNavigate();
   
-  // Função para salvar respostas da inspeção na nova tabela hierárquica
+  // Função para salvar respostas da inspeção
   const saveResponses = async (inspectionId: string, responses: any[]) => {
     if (!responses || !responses.length) return true;
     
     let hasError = false;
     setIsSaving(true);
     
-    // Formatar corretamente: answer sem duplicação de mediaUrls nem analysis
+    // Formatar os dados para inserção
     const responsesData = responses.map(r => ({
       inspection_id: inspectionId,
-      checklist_item_id: r.questionId,
-      // O answer armazena SOMENTE o "value" e "mediaAnalysisResults" se existirem
-      answer: (() => {
-        let obj: any = {};
-        if (typeof r.value !== "undefined") obj.value = r.value;
-        if (r.mediaAnalysisResults) obj.mediaAnalysisResults = r.mediaAnalysisResults;
-        // Salva somente quando não está vazio, senão salva null
-        if (Object.keys(obj).length === 0) return { value: null };
-        return obj;
-      })(),
+      question_id: r.questionId,
+      answer: r.value,
       action_plan: r.actionPlan,
       comments: r.comments,
-      notes: r.notes,
-      media_urls: Array.isArray(r.mediaUrls) ? [...r.mediaUrls] : [],
-      parent_response_id: r.parentResponseId || null,
-      created_at: r.createdAt ? r.createdAt : new Date().toISOString(),
+      media_urls: r.mediaUrls || [],
+      created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }));
     
@@ -60,11 +49,11 @@ export const useSaveInspection = () => {
       // Usar nossa função helper para envolver a chamada Supabase
       await wrapSupabaseCall(
         supabase
-          .from("checklist_item_responses")
-          .upsert(responsesData, { onConflict: 'inspection_id,checklist_item_id' })
+          .from("inspection_responses")
+          .upsert(responsesData, { onConflict: 'inspection_id,question_id' })
       );
       
-      console.log(`[saveResponses] Salvou ${responsesData.length} corretas:`, responsesData);
+      console.log(`Salvou ${responsesData.length} respostas`);
     } catch (error) {
       console.error("Erro ao salvar respostas:", error);
       hasError = true;
@@ -79,23 +68,13 @@ export const useSaveInspection = () => {
     let hasError = false;
     setIsSaving(true);
     
-    // Mapear status para os valores corretos do banco
-    let dbStatus = inspection.status;
-    if (inspection.status === 'Concluído' || inspection.status === 'Completed') {
-      dbStatus = INSPECTION_STATUSES.COMPLETED;
-    } else if (inspection.status === 'Em Andamento' || inspection.status === 'In Progress') {
-      dbStatus = INSPECTION_STATUSES.IN_PROGRESS;
-    } else if (inspection.status === 'Pendente' || inspection.status === 'Pending') {
-      dbStatus = INSPECTION_STATUSES.PENDING;
-    }
-    
     // Atualizar o status da inspeção
     try {
       await wrapSupabaseCall(
         supabase
           .from("inspections")
           .update({
-            status: dbStatus,
+            status: inspection.status,
             updated_at: new Date().toISOString(),
             inspector_name: inspection.inspectorName,
             inspector_title: inspection.inspectorTitle,
@@ -106,7 +85,7 @@ export const useSaveInspection = () => {
           .eq("id", inspection.id)
       );
       
-      console.log(`Atualizou status da inspeção para ${dbStatus}`);
+      console.log(`Atualizou status da inspeção para ${inspection.status}`);
     } catch (error) {
       console.error("Erro ao atualizar inspeção:", error);
       hasError = true;

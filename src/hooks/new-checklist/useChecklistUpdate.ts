@@ -54,36 +54,6 @@ export function useChecklistUpdate() {
         throw new Error(`Falha ao atualizar dados básicos: ${error.message}`);
       }
 
-      // Update groups if provided
-      if (groups && groups.length > 0) {
-        // First, delete existing groups for this checklist
-        const { error: deleteGroupsError } = await supabase
-          .from("checklist_groups")
-          .delete()
-          .eq("checklist_id", id);
-
-        if (deleteGroupsError) {
-          console.error("Erro ao deletar grupos existentes:", deleteGroupsError);
-        }
-
-        // Then insert new groups
-        const groupsToInsert = groups.map((g) => ({
-          id: g.id,
-          checklist_id: id,
-          title: g.title,
-          order: g.order,
-        }));
-
-        const { error: insertGroupsError } = await supabase
-          .from("checklist_groups")
-          .insert(groupsToInsert);
-
-        if (insertGroupsError) {
-          console.error("Erro ao inserir grupos atualizados:", insertGroupsError);
-          throw new Error(`Falha ao atualizar grupos: ${insertGroupsError.message}`);
-        }
-      }
-
       if (questions && questions.length > 0) {
         const newQuestions = questions.filter((q) => q.id.startsWith("new-"));
         const existingQuestions = questions.filter((q) => !q.id.startsWith("new-"));
@@ -103,20 +73,6 @@ export function useChecklistUpdate() {
             const options = Array.isArray(q.options) ? q.options.map((opt) => String(opt)) : [];
             const dbResponseType = frontendToDatabaseResponseType(q.responseType);
 
-            // Converter DisplayCondition para JSON compatível com Supabase
-            let displayCondition = null;
-            if (q.displayCondition) {
-              displayCondition = {
-                parentQuestionId: q.displayCondition.parentQuestionId || '',
-                expectedValue: q.displayCondition.expectedValue || '',
-                operator: q.displayCondition.operator || 'equals',
-                rules: q.displayCondition.rules || [],
-                logic: q.displayCondition.logic || 'AND'
-              } as Record<string, any>;
-            }
-
-            console.log(`Mapping question ${index}: ${q.responseType} -> ${dbResponseType}`);
-
             return {
               checklist_id: id,
               pergunta: q.text,
@@ -131,9 +87,7 @@ export function useChecklistUpdate() {
               permite_files: q.allowsFiles || false,
               parent_item_id: q.parentQuestionId,
               condition_value: q.conditionValue,
-              hint: hint,
-              display_condition: displayCondition,
-              is_conditional: q.isConditional || false
+              hint: hint
             };
           });
 
@@ -164,20 +118,6 @@ export function useChecklistUpdate() {
             
           const dbResponseType = frontendToDatabaseResponseType(question.responseType);
 
-          // Converter DisplayCondition para JSON compatível com Supabase
-          let displayCondition = null;
-          if (question.displayCondition) {
-            displayCondition = {
-              parentQuestionId: question.displayCondition.parentQuestionId || '',
-              expectedValue: question.displayCondition.expectedValue || '',
-              operator: question.displayCondition.operator || 'equals',
-              rules: question.displayCondition.rules || [],
-              logic: question.displayCondition.logic || 'AND'
-            } as Record<string, any>;
-          }
-
-          console.log(`Updating question: ${question.responseType} -> ${dbResponseType}`);
-
           const { error: updateError } = await supabase
             .from("checklist_itens")
             .update({
@@ -194,8 +134,6 @@ export function useChecklistUpdate() {
               parent_item_id: question.parentQuestionId,
               condition_value: question.conditionValue,
               hint: hint,
-              display_condition: displayCondition,
-              is_conditional: question.isConditional || false,
               updated_at: new Date().toISOString()
             })
             .eq("id", question.id);
