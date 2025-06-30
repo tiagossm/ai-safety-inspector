@@ -94,6 +94,7 @@ export function useCSVImport() {
     });
 
     if (validData.length === 0) {
+      setValidationErrors(["Nenhum dado válido encontrado no CSV"]);
       toast.error("Nenhum dado válido encontrado no CSV");
       return;
     }
@@ -163,6 +164,7 @@ export function useCSVImport() {
       error: (error) => {
         console.error("Erro ao processar arquivo CSV:", error);
         toast.error(`Erro ao processar arquivo: ${error.message}`);
+        setValidationErrors([`Erro ao processar arquivo: ${error.message}`]);
         setIsProcessing(false);
       }
     });
@@ -171,6 +173,7 @@ export function useCSVImport() {
   const handleTextImport = useCallback((csvText: string) => {
     if (!csvText.trim()) {
       toast.error("Texto CSV está vazio");
+      setValidationErrors(["Texto CSV está vazio"]);
       return;
     }
 
@@ -196,6 +199,7 @@ export function useCSVImport() {
       error: (error) => {
         console.error("Erro ao processar texto CSV:", error);
         toast.error(`Erro ao processar texto: ${error.message}`);
+        setValidationErrors([`Erro ao processar texto: ${error.message}`]);
         setIsProcessing(false);
       }
     });

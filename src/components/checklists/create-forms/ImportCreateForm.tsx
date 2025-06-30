@@ -69,6 +69,9 @@ export function ImportCreateForm({
       questions: questionsToSubmit
     };
     
+    // Atualizar o form com as perguntas antes do submit
+    setForm(formWithQuestions);
+    
     return await onSubmit(e);
   };
 
@@ -78,7 +81,7 @@ export function ImportCreateForm({
   return (
     <div className="space-y-6">
       <form onSubmit={handleFormSubmit} className="space-y-6">
-        {/* Seção de Importação CSV - Agora é o foco principal */}
+        {/* Seção de Importação CSV */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -88,7 +91,7 @@ export function ImportCreateForm({
           </CardHeader>
           <CardContent>
             <CSVImportSection
-              onDataParsed={() => {}} // Não precisamos mais desta callback
+              onDataParsed={() => {}} 
               onTextImport={handleTextImport}
               onFileChange={(e) => {
                 if (e.target.files && e.target.files[0]) {
@@ -238,7 +241,7 @@ export function ImportCreateForm({
           </Card>
         )}
 
-        {/* Informações básicas do checklist - Simplificadas */}
+        {/* Informações básicas do checklist */}
         <Card>
           <CardHeader>
             <CardTitle>Informações do Checklist</CardTitle>

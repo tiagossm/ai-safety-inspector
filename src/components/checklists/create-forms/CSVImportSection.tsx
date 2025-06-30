@@ -126,11 +126,13 @@ export function CSVImportSection({
                 Assistente
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[80vh]">
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
               <DialogHeader>
                 <DialogTitle>Assistente para Criação de CSV</DialogTitle>
               </DialogHeader>
-              <CSVChatBot />
+              <div className="h-[60vh]">
+                <CSVChatBot />
+              </div>
             </DialogContent>
           </Dialog>
           
@@ -141,7 +143,7 @@ export function CSVImportSection({
                 Documentação
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[80vh]">
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
               <DialogHeader>
                 <DialogTitle>Documentação e Exemplos CSV</DialogTitle>
               </DialogHeader>
