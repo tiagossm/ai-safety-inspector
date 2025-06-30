@@ -14,11 +14,89 @@ export interface CSVQuestion {
   options?: string;
 }
 
+export interface ProcessedQuestion {
+  pergunta: string;
+  tipo_resposta: string;
+  obrigatorio: boolean;
+  opcoes: string[] | null;
+  ordem: number;
+}
+
 export function useCSVImport() {
   const [parsedQuestions, setParsedQuestions] = useState<CSVQuestion[]>([]);
+  const [processedQuestions, setProcessedQuestions] = useState<ProcessedQuestion[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
+  const validResponseTypes = ['sim/não', 'texto', 'seleção múltipla', 'numérico', 'foto', 'assinatura', 'time', 'date'];
+
+  const validateCSVData = useCallback((data: CSVQuestion[]): { valid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+    
+    // Verificar se há dados
+    if (data.length === 0) {
+      errors.push("Nenhum dado encontrado no arquivo");
+      return { valid: false, errors };
+    }
+
+    // Verificar colunas obrigatórias
+    const requiredColumns = ['pergunta', 'tipo_resposta', 'obrigatorio'];
+    const firstRow = data[0];
+    
+    // Verificar se pelo menos uma das variações de coluna existe
+    const hasQuestionColumn = firstRow.hasOwnProperty('pergunta') || firstRow.hasOwnProperty('question');
+    const hasTypeColumn = firstRow.hasOwnProperty('tipo_resposta') || firstRow.hasOwnProperty('type');
+    const hasRequiredColumn = firstRow.hasOwnProperty('obrigatorio') || firstRow.hasOwnProperty('required');
+
+    if (!hasQuestionColumn) {
+      errors.push("Coluna 'pergunta' ou 'question' é obrigatória");
+    }
+    if (!hasTypeColumn) {
+      errors.push("Coluna 'tipo_resposta' ou 'type' é obrigatória");
+    }
+    if (!hasRequiredColumn) {
+      errors.push("Coluna 'obrigatorio' ou 'required' é obrigatória");
+    }
+
+    // Validar cada linha
+    data.forEach((row, index) => {
+      const rowNumber = index + 1;
+      const pergunta = row.pergunta || row.question;
+      const tipo = row.tipo_resposta || row.type;
+      const obrigatorio = row.obrigatorio || row.required;
+
+      // Verificar se a pergunta não está vazia
+      if (!pergunta || pergunta.trim() === '') {
+        errors.push(`Linha ${rowNumber}: Pergunta não pode estar vazia`);
+      }
+
+      // Verificar se o tipo de resposta é válido
+      if (!tipo || !validResponseTypes.includes(tipo)) {
+        errors.push(`Linha ${rowNumber}: Tipo de resposta inválido "${tipo}". Use: ${validResponseTypes.join(', ')}`);
+      }
+
+      // Verificar campo obrigatório
+      if (obrigatorio && !['true', 'false', 'sim', 'não'].includes(String(obrigatorio).toLowerCase())) {
+        errors.push(`Linha ${rowNumber}: Campo obrigatório deve ser "true", "false", "sim" ou "não"`);
+      }
+
+      // Verificar se seleção múltipla tem opções
+      if (tipo === 'seleção múltipla') {
+        const opcoes = row.opcoes || row.options;
+        if (!opcoes || opcoes.trim() === '') {
+          errors.push(`Linha ${rowNumber}: Seleção múltipla deve ter opções definidas`);
+        } else if (!opcoes.includes('|')) {
+          errors.push(`Linha ${rowNumber}: Opções de seleção múltipla devem ser separadas por "|"`);
+        }
+      }
+    });
+
+    return { valid: errors.length === 0, errors };
+  }, [validResponseTypes]);
 
   const processCSVData = useCallback((data: CSVQuestion[]) => {
+    console.log("Iniciando processamento de dados CSV:", data);
+    
     // Filtrar linhas vazias
     const validData = data.filter(row => {
       const values = Object.values(row);
@@ -30,29 +108,67 @@ export function useCSVImport() {
       return;
     }
 
-    // Validar se pelo menos temos colunas de pergunta
-    const hasValidQuestions = validData.some(row => 
-      row.pergunta || row.question || 
-      Object.values(row).some(val => val && val.toString().trim().length > 0)
-    );
-
-    if (!hasValidQuestions) {
-      toast.error("Não foi possível encontrar perguntas válidas no CSV");
+    // Validar dados
+    const validation = validateCSVData(validData);
+    if (!validation.valid) {
+      setValidationErrors(validation.errors);
+      validation.errors.forEach(error => {
+        toast.error(error);
+      });
       return;
     }
 
+    // Processar dados válidos
+    const processed: ProcessedQuestion[] = validData.map((row, index) => {
+      const pergunta = (row.pergunta || row.question || `Pergunta ${index + 1}`).trim();
+      const tipo_resposta = (row.tipo_resposta || row.type || 'texto').trim();
+      const obrigatorioValue = (row.obrigatorio || row.required || 'true').toLowerCase();
+      const obrigatorio = obrigatorioValue === 'true' || obrigatorioValue === 'sim';
+      
+      let opcoes: string[] | null = null;
+      if (tipo_resposta === 'seleção múltipla') {
+        const opcoesString = row.opcoes || row.options;
+        if (opcoesString) {
+          opcoes = opcoesString.split('|').map(opt => opt.trim()).filter(opt => opt.length > 0);
+        }
+      }
+
+      return {
+        pergunta,
+        tipo_resposta,
+        obrigatorio,
+        opcoes,
+        ordem: index + 1
+      };
+    });
+
     setParsedQuestions(validData);
-    toast.success(`${validData.length} perguntas importadas com sucesso`);
-  }, []);
+    setProcessedQuestions(processed);
+    setValidationErrors([]);
+    
+    console.log("Dados processados com sucesso:", processed);
+    toast.success(`${processed.length} perguntas processadas com sucesso`);
+  }, [validateCSVData]);
 
   const handleFileImport = useCallback((file: File) => {
     if (!file) return;
 
     setIsProcessing(true);
+    setValidationErrors([]);
     
     Papa.parse(file, {
       header: true,
+      skipEmptyLines: true,
       complete: (results) => {
+        if (results.errors && results.errors.length > 0) {
+          console.warn("Erros de parsing CSV:", results.errors);
+          results.errors.forEach(error => {
+            if (error.type === 'Quotes') {
+              toast.warning(`Aviso linha ${error.row}: Problema com aspas - ${error.message}`);
+            }
+          });
+        }
+        
         processCSVData(results.data as CSVQuestion[]);
         setIsProcessing(false);
       },
@@ -71,10 +187,21 @@ export function useCSVImport() {
     }
 
     setIsProcessing(true);
+    setValidationErrors([]);
 
     Papa.parse(csvText, {
       header: true,
+      skipEmptyLines: true,
       complete: (results) => {
+        if (results.errors && results.errors.length > 0) {
+          console.warn("Erros de parsing CSV:", results.errors);
+          results.errors.forEach(error => {
+            if (error.type === 'Quotes') {
+              toast.warning(`Aviso linha ${error.row}: Problema com aspas`);
+            }
+          });
+        }
+        
         processCSVData(results.data as CSVQuestion[]);
         setIsProcessing(false);
       },
@@ -88,25 +215,47 @@ export function useCSVImport() {
 
   const clearImportedData = useCallback(() => {
     setParsedQuestions([]);
+    setProcessedQuestions([]);
+    setValidationErrors([]);
   }, []);
 
   const transformQuestionsForSubmit = useCallback(() => {
-    return parsedQuestions.map((q, index) => ({
-      pergunta: q.pergunta || q.question || `Pergunta ${index + 1}`,
-      tipo_resposta: q.tipo_resposta || q.type || 'sim/não',
-      obrigatorio: q.obrigatorio === 'sim' || q.obrigatorio === 'true' || q.required === 'true' || true,
-      opcoes: q.opcoes || q.options ? (q.opcoes || q.options)?.split('|').map(opt => opt.trim()) : null,
+    return processedQuestions.map((q, index) => ({
+      pergunta: q.pergunta,
+      tipo_resposta: q.tipo_resposta,
+      obrigatorio: q.obrigatorio,
+      opcoes: q.opcoes,
       ordem: index + 1
     }));
-  }, [parsedQuestions]);
+  }, [processedQuestions]);
+
+  const getQuestionPreview = useCallback((limit: number = 5) => {
+    return processedQuestions.slice(0, limit);
+  }, [processedQuestions]);
+
+  const getValidationSummary = useCallback(() => {
+    return {
+      totalQuestions: processedQuestions.length,
+      requiredQuestions: processedQuestions.filter(q => q.obrigatorio).length,
+      optionalQuestions: processedQuestions.filter(q => !q.obrigatorio).length,
+      multipleChoiceQuestions: processedQuestions.filter(q => q.tipo_resposta === 'seleção múltipla').length,
+      hasErrors: validationErrors.length > 0,
+      errorCount: validationErrors.length
+    };
+  }, [processedQuestions, validationErrors]);
 
   return {
     parsedQuestions,
+    processedQuestions,
     isProcessing,
+    validationErrors,
     handleFileImport,
     handleTextImport,
     clearImportedData,
     transformQuestionsForSubmit,
-    hasImportedQuestions: parsedQuestions.length > 0
+    getQuestionPreview,
+    getValidationSummary,
+    hasImportedQuestions: processedQuestions.length > 0,
+    hasValidationErrors: validationErrors.length > 0
   };
 }
