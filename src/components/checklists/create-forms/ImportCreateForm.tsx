@@ -262,17 +262,17 @@ export function ImportCreateForm({
                   <Skeleton className="h-9 w-full" />
                 ) : (
                   <Select
-                    value={form.company_id !== undefined ? String(form.company_id) : ""}
+                    value={form.company_id || "none"}
                     onValueChange={(value) => setForm({ 
                       ...form, 
-                      company_id: value !== "" ? value : undefined 
+                      company_id: value === "none" ? undefined : value 
                     })}
                   >
                     <SelectTrigger id="company_id">
                       <SelectValue placeholder="Selecione uma empresa (opcional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nenhuma empresa</SelectItem>
+                      <SelectItem value="none">Nenhuma empresa</SelectItem>
                       {companies.map((company) => (
                         <SelectItem key={company.id} value={String(company.id)}>
                           {company.fantasy_name}
