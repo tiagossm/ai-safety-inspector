@@ -12,6 +12,7 @@ import { CompanyListItem } from "@/types/CompanyListItem";
 import { FormActions } from "./FormActions";
 import { CSVImportSection } from "./CSVImportSection";
 import { useCSVImport } from "@/hooks/checklist/form/useCSVImport";
+import { useImportFormSubmit } from "@/hooks/checklist/form/useImportFormSubmit";
 import { useNavigate } from "react-router-dom";
 import { AlertCircle, CheckCircle, Eye, EyeOff, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,26 +21,19 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 interface ImportCreateFormProps {
   form: NewChecklist;
   setForm: React.Dispatch<React.SetStateAction<NewChecklist>>;
-  users: any[];
-  loadingUsers: boolean;
-  file: File | null;
-  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   companies: CompanyListItem[];
   loadingCompanies: boolean;
-  onSubmit: (e: React.FormEvent) => Promise<boolean>;
-  isSubmitting: boolean;
 }
 
 export function ImportCreateForm({
   form,
   setForm,
   companies,
-  loadingCompanies,
-  onSubmit,
-  isSubmitting
+  loadingCompanies
 }: ImportCreateFormProps) {
   const navigate = useNavigate();
   const [showPreview, setShowPreview] = React.useState(false);
+  const { submitImportForm, isSubmitting } = useImportFormSubmit();
   
   const { 
     processedQuestions,
@@ -62,17 +56,13 @@ export function ImportCreateForm({
       return false;
     }
     
-    // Adicionar as perguntas transformadas ao formulário antes do submit
+    // Usar as perguntas processadas do hook CSV
     const questionsToSubmit = transformQuestionsForSubmit();
-    const formWithQuestions = {
-      ...form,
-      questions: questionsToSubmit
-    };
+    console.log("Perguntas para submissão:", questionsToSubmit);
     
-    // Atualizar o form com as perguntas antes do submit
-    setForm(formWithQuestions);
-    
-    return await onSubmit(e);
+    // Submeter o formulário com as perguntas
+    const success = await submitImportForm(form, questionsToSubmit);
+    return success;
   };
 
   const validationSummary = getValidationSummary();

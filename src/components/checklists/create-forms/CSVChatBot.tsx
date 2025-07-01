@@ -208,110 +208,113 @@ Pode me dar mais detalhes sobre o tipo de checklist que você quer criar?`;
     toast.success("Arquivo CSV baixado!");
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
   return (
-    <Card className="h-[600px] flex flex-col">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2">
-          <MessageCircle className="h-5 w-5 text-blue-600" />
-          Assistente CSV
-        </CardTitle>
-      </CardHeader>
+    <div className="flex flex-col h-full max-h-[500px]">
+      <div className="flex items-center gap-2 p-4 border-b">
+        <MessageCircle className="h-5 w-5 text-blue-600" />
+        <h3 className="font-semibold">Assistente CSV</h3>
+      </div>
       
-      <CardContent className="flex-1 flex flex-col p-0">
-        <ScrollArea className="flex-1 px-4">
-          <div className="space-y-4 pb-4">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div className={`flex gap-2 max-w-[80%] ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                    message.role === 'user' 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-gray-200 text-gray-700'
+      <ScrollArea className="flex-1 p-4">
+        <div className="space-y-4">
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div className={`flex gap-2 max-w-[80%] ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                  message.role === 'user' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-200 text-gray-700'
+                }`}>
+                  {message.role === 'user' ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+                </div>
+                
+                <div className="space-y-2">
+                  <div className={`rounded-lg px-3 py-2 ${
+                    message.role === 'user'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-900'
                   }`}>
-                    {message.role === 'user' ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+                    <div className="whitespace-pre-wrap text-sm">{message.content}</div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <div className={`rounded-lg px-3 py-2 ${
-                      message.role === 'user'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-900'
-                    }`}>
-                      <div className="whitespace-pre-wrap text-sm">{message.content}</div>
-                    </div>
-                    
-                    {message.csvSuggestion && (
-                      <div className="bg-gray-50 border rounded-lg p-3 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-gray-700">Exemplo CSV:</span>
-                          <div className="flex gap-1">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleCopyCSV(message.csvSuggestion!)}
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleDownloadCSV(message.csvSuggestion!)}
-                            >
-                              <Download className="h-3 w-3" />
-                            </Button>
-                          </div>
+                  {message.csvSuggestion && (
+                    <div className="bg-gray-50 border rounded-lg p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-700">Exemplo CSV:</span>
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleCopyCSV(message.csvSuggestion!)}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDownloadCSV(message.csvSuggestion!)}
+                          >
+                            <Download className="h-3 w-3" />
+                          </Button>
                         </div>
-                        <pre className="text-xs bg-white p-2 rounded border overflow-x-auto">
-                          {message.csvSuggestion}
-                        </pre>
                       </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-            
-            {isProcessing && (
-              <div className="flex gap-3 justify-start">
-                <div className="flex gap-2">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center">
-                    <Bot className="h-4 w-4" />
-                  </div>
-                  <div className="bg-gray-100 rounded-lg px-3 py-2">
-                    <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      <pre className="text-xs bg-white p-2 rounded border overflow-x-auto">
+                        {message.csvSuggestion}
+                      </pre>
                     </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+          
+          {isProcessing && (
+            <div className="flex gap-3 justify-start">
+              <div className="flex gap-2">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center">
+                  <Bot className="h-4 w-4" />
+                </div>
+                <div className="bg-gray-100 rounded-lg px-3 py-2">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                   </div>
                 </div>
               </div>
-            )}
-          </div>
-        </ScrollArea>
-        
-        <div className="border-t p-4">
-          <div className="flex gap-2">
-            <Input
-              placeholder="Digite sua pergunta sobre CSV..."
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              disabled={isProcessing}
-            />
-            <Button 
-              onClick={handleSendMessage}
-              disabled={!inputMessage.trim() || isProcessing}
-              size="icon"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
+            </div>
+          )}
         </div>
-      </CardContent>
-    </Card>
+      </ScrollArea>
+      
+      <div className="border-t p-4">
+        <div className="flex gap-2">
+          <Input
+            placeholder="Digite sua pergunta sobre CSV..."
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
+            disabled={isProcessing}
+          />
+          <Button 
+            onClick={handleSendMessage}
+            disabled={!inputMessage.trim() || isProcessing}
+            size="icon"
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }

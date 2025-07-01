@@ -4,18 +4,22 @@ import { supabase } from "@/integrations/supabase/client";
 
 export function useChecklistUsers() {
   const { data: users = [], isLoading } = useQuery({
-    queryKey: ["users"],
+    queryKey: ["checklist-users"],
     queryFn: async () => {
+      console.log("Buscando usuários para checklist...");
+      
       const { data, error } = await supabase
-        .from("profiles")
+        .from("users")
         .select("id, name, email")
+        .eq("status", "active")
         .order("name");
       
       if (error) {
-        console.error("Error fetching users:", error);
+        console.error("Erro ao buscar usuários:", error);
         return [];
       }
       
+      console.log("Usuários encontrados:", data);
       return data || [];
     }
   });
