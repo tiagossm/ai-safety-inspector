@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -27,6 +26,7 @@ import {
 } from "lucide-react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { SubitemGenerator } from "./SubitemGenerator";
+import { useForm, Controller } from "react-hook-form";
 
 interface QuestionItemProps {
   question: ChecklistQuestion;
@@ -157,18 +157,18 @@ export function QuestionItem({
     toast.success(`${subitemsToAdd.length} subitens gerados com sucesso`);
   };
 
-  // RESPONSE_TYPES usando códigos internos em inglês (valores) com labels em português
+  // Definição do array de tipos
   const RESPONSE_TYPES = [
-    { value: "text", label: "Texto" },
-    { value: "numeric", label: "Numérico" },
-    { value: "yes_no", label: "Sim / Não" },
-    { value: "dropdown", label: "Lista Suspensa" },
-    { value: "multiple_choice", label: "Seleção Múltipla" },
-    { value: "checkboxes", label: "Caixas de Seleção" },
-    { value: "date", label: "Data" },
-    { value: "time", label: "Hora" },
-    { value: "datetime", label: "Data e Hora" },
-    { value: "paragraph", label: "Parágrafo" },
+    { value: 'text',            label: 'Texto'           },
+    { value: 'paragraph',       label: 'Parágrafo'       },
+    { value: 'numeric',         label: 'Numérico'        },
+    { value: 'yes_no',          label: 'Sim / Não'       },
+    { value: 'dropdown',        label: 'Lista Suspensa'  },
+    { value: 'multiple_choice', label: 'Seleção Múltipla' },
+    { value: 'multiple_select', label: 'Caixas de Seleção'},
+    { value: 'date',            label: 'Data'            },
+    { value: 'time',            label: 'Hora'            },
+    { value: 'datetime',        label: 'Data e Hora'     },
   ];
 
   return (
@@ -438,7 +438,7 @@ export function QuestionItem({
                       parentId={question.id}
                     />
                   ))
-                )}
+                }
               </div>
             </div>
           </CollapsibleContent>
