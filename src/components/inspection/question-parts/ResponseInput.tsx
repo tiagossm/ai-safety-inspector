@@ -1,5 +1,7 @@
 
 import React, { useCallback } from 'react';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { YesNoResponseInput } from './response-types/YesNoResponseInput';
 import { TextResponseInput } from './response-types/TextResponseInput';
 import { NumberResponseInput } from './response-types/NumberResponseInput';
@@ -83,34 +85,6 @@ export function ResponseInput({
           onSaveActionPlan={onSaveActionPlan}
         />
       );
-    case "number":
-      return (
-        <div className="space-y-2">
-          <NumberResponseInput
-            question={question}
-            response={responseObject}
-            onResponseChange={handleValueChange}
-            onChange={handleSimpleValueChange}
-            inspectionId={inspectionId}
-            actionPlan={actionPlan}
-            onSaveActionPlan={onSaveActionPlan}
-          />
-          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
-            <PhotoInput
-              mediaUrls={mediaUrls}
-              onAddMedia={() => console.log("Adicionar mídia para questão numérica")}
-              onDeleteMedia={(url) => {
-                const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
-                handleMediaChange(updatedUrls);
-              }}
-              allowsPhoto={question.allowsPhoto}
-              allowsVideo={question.allowsVideo}
-              allowsAudio={question.allowsAudio}
-              allowsFiles={question.allowsFiles}
-            />
-          )}
-        </div>
-      );
     case "multiple_choice":
       return (
         <div className="space-y-2">
@@ -135,32 +109,19 @@ export function ResponseInput({
           )}
         </div>
       );
-    case "photo":
-      return (
-        <PhotoInput
-          mediaUrls={mediaUrls}
-          onAddMedia={() => console.log("Adicionar mídia para questão foto")}
-          onDeleteMedia={(url) => {
-            const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
-            handleMediaChange(updatedUrls);
-          }}
-          allowsPhoto={true}
-          allowsVideo={question.allowsVideo}
-          allowsAudio={question.allowsAudio}
-          allowsFiles={question.allowsFiles}
-        />
-      );
-    case "signature":
+    case "numeric":
       return (
         <div className="space-y-2">
-          <SignatureInput 
+          <Input
+            type="number"
             value={responseObject.value || ""}
-            onChange={handleSimpleValueChange}
+            onChange={(e) => handleSimpleValueChange(e.target.value)}
+            placeholder="Digite um valor..."
           />
           {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
             <PhotoInput
               mediaUrls={mediaUrls}
-              onAddMedia={() => console.log("Adicionar mídia para questão assinatura")}
+              onAddMedia={() => console.log("Adicionar mídia para questão numérica")}
               onDeleteMedia={(url) => {
                 const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
                 handleMediaChange(updatedUrls);
@@ -172,6 +133,107 @@ export function ResponseInput({
             />
           )}
         </div>
+      );
+    case "paragraph":
+      return (
+        <div className="space-y-2">
+          <Textarea
+            value={responseObject.value || ""}
+            onChange={(e) => handleSimpleValueChange(e.target.value)}
+            placeholder="Digite sua resposta..."
+            className="min-h-[120px]"
+          />
+          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
+            <PhotoInput
+              mediaUrls={mediaUrls}
+              onAddMedia={() => console.log("Adicionar mídia para questão")}
+              onDeleteMedia={(url) => {
+                const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
+                handleMediaChange(updatedUrls);
+              }}
+              allowsPhoto={question.allowsPhoto}
+              allowsVideo={question.allowsVideo}
+              allowsAudio={question.allowsAudio}
+              allowsFiles={question.allowsFiles}
+            />
+          )}
+        </div>
+      );
+    case "dropdown":
+      return (
+        <div className="space-y-2">
+          <select
+            value={responseObject.value || ""}
+            onChange={(e) => handleSimpleValueChange(e.target.value)}
+            className="w-full px-3 py-2 border rounded-md"
+          >
+            <option value="">Selecione uma opção</option>
+            {(question.options || []).map((option: string, index: number) => (
+              <option key={index} value={option}>{option}</option>
+            ))}
+          </select>
+          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
+            <PhotoInput
+              mediaUrls={mediaUrls}
+              onAddMedia={() => console.log("Adicionar mídia para questão dropdown")}
+              onDeleteMedia={(url) => {
+                const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
+                handleMediaChange(updatedUrls);
+              }}
+              allowsPhoto={question.allowsPhoto}
+              allowsVideo={question.allowsVideo}
+              allowsAudio={question.allowsAudio}
+              allowsFiles={question.allowsFiles}
+            />
+          )}
+        </div>
+      );
+    case "multiple_select":
+      return (
+        <div className="space-y-2">
+          <div className="space-y-2">
+            {(question.options || []).map((option: string, index: number) => (
+              <label key={index} className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={Array.isArray(responseObject.value) ? responseObject.value.includes(option) : false}
+                  onChange={(e) => {
+                    const currentValue = Array.isArray(responseObject.value) ? responseObject.value : [];
+                    if (e.target.checked) {
+                      handleSimpleValueChange([...currentValue, option]);
+                    } else {
+                      handleSimpleValueChange(currentValue.filter(v => v !== option));
+                    }
+                  }}
+                  className="form-checkbox"
+                />
+                <span>{option}</span>
+              </label>
+            ))}
+          </div>
+          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
+            <PhotoInput
+              mediaUrls={mediaUrls}
+              onAddMedia={() => console.log("Adicionar mídia para questão multiple_select")}
+              onDeleteMedia={(url) => {
+                const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
+                handleMediaChange(updatedUrls);
+              }}
+              allowsPhoto={question.allowsPhoto}
+              allowsVideo={question.allowsVideo}
+              allowsAudio={question.allowsAudio}
+              allowsFiles={question.allowsFiles}
+            />
+          )}
+        </div>
+      );
+    case "datetime":
+      return (
+        <Input
+          type="datetime-local"
+          value={responseObject.value || ""}
+          onChange={(e) => handleSimpleValueChange(e.target.value)}
+        />
       );
     case "time":
       return (

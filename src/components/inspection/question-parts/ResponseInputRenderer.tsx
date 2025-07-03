@@ -267,48 +267,6 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     );
   }
 
-  if (responseType === "photo") {
-    return (
-      <PhotoInput
-        mediaUrls={mediaUrls}
-        onAddMedia={() => console.log("Adicionar mídia para questão photo")}
-        onDeleteMedia={(url) => {
-          const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
-          handleMediaChange(updatedUrls);
-        }}
-        allowsPhoto={true}
-        allowsVideo={question.allowsVideo}
-        allowsAudio={question.allowsAudio}
-        allowsFiles={question.allowsFiles}
-      />
-    );
-  }
-
-  if (responseType === "signature") {
-    return (
-      <div className="space-y-2">
-        <SignatureInput 
-          value={safeResponse.value || ""}
-          onChange={handleSimpleValueChange}
-        />
-        {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
-          <PhotoInput
-            mediaUrls={mediaUrls}
-            onAddMedia={() => console.log("Adicionar mídia para questão signature")}
-            onDeleteMedia={(url) => {
-              const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
-              handleMediaChange(updatedUrls);
-            }}
-            allowsPhoto={question.allowsPhoto}
-            allowsVideo={question.allowsVideo}
-            allowsAudio={question.allowsAudio}
-            allowsFiles={question.allowsFiles}
-          />
-        )}
-      </div>
-    );
-  }
-
   if (responseType === "date") {
     return (
       <DateResponseInput

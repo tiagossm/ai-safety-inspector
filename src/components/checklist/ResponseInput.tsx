@@ -133,7 +133,7 @@ export function QuestionEditor({
             <label className="text-sm font-medium mb-1 block">Tipo de resposta</label>
             <Select
               value={frontendResponseType}
-              onValueChange={(value: "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature" | "time" | "date") => {
+              onValueChange={(value) => {
                 handleUpdate("responseType", value);
               }}
             >
