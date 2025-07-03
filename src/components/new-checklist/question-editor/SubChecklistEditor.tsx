@@ -98,14 +98,21 @@ export function SubChecklistEditor({
       'seleção múltipla': 'multiple_choice',
       'texto': 'text',
       'numérico': 'numeric',
-      'foto': 'photo',
-      'assinatura': 'signature',
-      'hora': 'time',   // ajuste para aceitar 'hora' vindo do banco
+      'foto': 'text', // Convertido para texto com permissão de mídia
+      'assinatura': 'text', // Convertido para texto
+      'hora': 'time',
       'time': 'time',
-      'data': 'date',   // ajuste para aceitar 'data' vindo do banco
-      'date': 'date'
+      'data': 'date',
+      'date': 'date',
+      'parágrafo': 'paragraph',
+      'paragraph': 'paragraph',
+      'dropdown': 'dropdown',
+      'lista suspensa': 'dropdown',
+      'multiple_select': 'multiple_select',
+      'caixas de seleção': 'multiple_select',
+      'datetime': 'datetime',
+      'data e hora': 'datetime'
     };
-    // @ts-ignore - Forçando o tipo para incluir time e date
     return typeMap[dbType] || 'text';
   };
 

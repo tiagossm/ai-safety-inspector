@@ -12,7 +12,7 @@ const isValidUUID = (id: string): boolean => {
 };
 
 // Helper function to normalize response type
-const normalizeResponseType = (responseType: string): "text" | "yes_no" | "multiple_choice" | "numeric" | "photo" | "signature" => {
+const normalizeResponseType = (responseType: string): ChecklistQuestion["responseType"] => {
   if (!responseType) return "text";
   
   const type = responseType.toLowerCase();
@@ -34,11 +34,35 @@ const normalizeResponseType = (responseType: string): "text" | "yes_no" | "multi
   }
   
   if (type.includes("foto") || type.includes("photo") || type.includes("imagem") || type.includes("image")) {
-    return "photo";
+    return "text"; // Convertido para texto com permissão de mídia
   }
   
   if (type.includes("assinatura") || type.includes("signature")) {
-    return "signature";
+    return "text"; // Convertido para texto
+  }
+  
+  if (type.includes("parágrafo") || type.includes("paragraph")) {
+    return "paragraph";
+  }
+  
+  if (type.includes("dropdown") || type.includes("lista")) {
+    return "dropdown";
+  }
+  
+  if (type.includes("multiple_select") || type.includes("caixas")) {
+    return "multiple_select";
+  }
+  
+  if (type.includes("date") || type.includes("data")) {
+    return "date";
+  }
+  
+  if (type.includes("time") || type.includes("hora")) {
+    return "time";
+  }
+  
+  if (type.includes("datetime") || type.includes("data e hora")) {
+    return "datetime";
   }
   
   return "text"; // Default to text if no match is found
