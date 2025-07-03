@@ -89,9 +89,9 @@ export function useChecklistEditorContext() {
       setDescription(checklist.description || "");
       setCategory(checklist.category || "");
       setIsTemplate(checklist.isTemplate || false);
-      setCompanyId(checklist.company_id || undefined);
-      setResponsibleId(checklist.responsible_id || undefined);
-      setDueDate(checklist.due_date || undefined);
+      setCompanyId(checklist.companyId || undefined);
+      setResponsibleId(checklist.responsibleId || undefined);
+      setDueDate(checklist.dueDate || undefined);
       
       // Ensure we're setting a properly typed status value
       const checklistStatus = checklist.status === "inactive" ? "inactive" : "active";
