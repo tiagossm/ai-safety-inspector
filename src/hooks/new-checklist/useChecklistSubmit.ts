@@ -3,6 +3,7 @@ import { useCallback, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
+import { frontendToDatabaseResponseType } from "@/utils/responseTypeMap";
 
 export function useChecklistSubmit(
   id: string | undefined,
@@ -137,18 +138,10 @@ export function useChecklistSubmit(
       // Prepare questions data
       const questionsData = questions.map((question, index) => {
         const questionData = {
-          id: question.id.startsWith('new-') || question.id.startsWith('ai-generated-') || question.id.startsWith('csv-imported-') ? undefined : question.id,
+          id: question.id.startsWith('new-') ? undefined : question.id,
           checklist_id: checklistId,
           pergunta: question.text,
-          tipo_resposta: question.responseType === "yes_no" ? "sim/não" :
-                        question.responseType === "text" ? "texto" :
-                        question.responseType === "numeric" ? "numérico" :
-                        question.responseType === "multiple_choice" ? "seleção múltipla" :
-                        question.responseType === "photo" ? "foto" :
-                        question.responseType === "signature" ? "assinatura" :
-                        question.responseType === "time" ? "time" :
-                        question.responseType === "date" ? "date" :
-                        "sim/não",
+          tipo_resposta: frontendToDatabaseResponseType(question.responseType),
           obrigatorio: question.isRequired,
           ordem: question.order || index,
           opcoes: question.options && question.options.length > 0 ? JSON.stringify(question.options) : null,

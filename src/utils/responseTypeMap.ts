@@ -13,7 +13,7 @@ export function frontendToDatabaseResponseType(frontendType: string): string {
     'date': 'date'
   };
 
-  return typeMap[frontendType] || 'texto';
+  return typeMap[frontendType] || 'sim/não';
 }
 
 export function databaseToFrontendResponseType(dbType: string): string {
@@ -28,5 +28,5 @@ export function databaseToFrontendResponseType(dbType: string): string {
     'date': 'date'
   };
 
-  return typeMap[dbType] || 'text';
+  return typeMap[dbType] || 'yes_no';
 }

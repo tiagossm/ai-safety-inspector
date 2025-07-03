@@ -55,39 +55,31 @@ export function ChecklistEditorContainer() {
     id: editorContext.id,
   };
   
-  // Enhanced save handler to provide feedback and navigate after success
+  // Manual save handler
   const handleSave = async (): Promise<void> => {
     try {
-      toast.info("Salvando checklist...", { duration: 2000 });
-      if (editorContext.handleSave) {
-        const success = await editorContext.handleSave();
-        if (success) {
-          toast.success("Checklist salvo com sucesso!", { duration: 5000 });
-          navigate("/new-checklists");
-        } else {
-          toast.error("Erro ao salvar checklist", { duration: 5000 });
-        }
+      const success = await editorContext.handleSave();
+      if (success) {
+        navigate("/new-checklists");
       }
     } catch (error) {
       console.error("Error saving checklist:", error);
-      toast.error(`Erro ao salvar checklist: ${error instanceof Error ? error.message : "Erro desconhecido"}`, { duration: 5000 });
+      toast.error(`Erro ao salvar checklist: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
     }
   };
 
-  // Enhanced start inspection handler with proper error handling
+  // Start inspection handler
   const handleStartInspection = async (): Promise<void> => {
     if (!editorContext.id) {
-      toast.error("É necessário salvar o checklist antes de iniciar a inspeção", { duration: 5000 });
+      toast.error("É necessário salvar o checklist antes de iniciar a inspeção");
       return;
     }
     try {
-      toast.info("Preparando inspeção...", { duration: 2000 });
       console.log(`Redirecionando para inspeção com checklistId=${editorContext.id}`);
-      toast.success("Redirecionando para a inspeção...", { duration: 2000 });
       navigate(`/inspections/new?checklistId=${editorContext.id}`);
     } catch (error) {
       console.error("Error starting inspection:", error);
-      toast.error(`Erro ao iniciar inspeção: ${error instanceof Error ? error.message : "Erro desconhecido"}`, { duration: 5000 });
+      toast.error(`Erro ao iniciar inspeção: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
     }
   };
   
@@ -99,7 +91,7 @@ export function ChecklistEditorContainer() {
           onBack={() => navigate("/new-checklists")}
           onRefresh={() => {
             if (editorContext.id) {
-              toast.info("Recarregando dados...", { duration: 2000 });
+              toast.info("Recarregando dados...");
               if (editorContext.refetch) {
                 editorContext.refetch();
               }
@@ -107,9 +99,6 @@ export function ChecklistEditorContainer() {
           }}
           onStartInspection={handleStartInspection}
           onSave={handleSave}
-          onAIExpand={editorContext.handleAIExpand}
-          onCSVImport={editorContext.handleCSVImport}
-          isGeneratingAI={editorContext.isGeneratingAI}
           isSaving={editorContext.isSubmitting}
         />
         

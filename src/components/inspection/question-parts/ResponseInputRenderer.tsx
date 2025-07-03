@@ -8,6 +8,7 @@ import { NumberInput } from "@/components/inspection/question-inputs/NumberInput
 import { MultipleChoiceInput } from "@/components/inspection/question-inputs/MultipleChoiceInput";
 import { PhotoInput } from "@/components/inspection/question-inputs/PhotoInput";
 import { SignatureInput } from "@/components/checklist/SignatureInput";
+import { databaseToFrontendResponseType } from "@/utils/responseTypeMap";
 
 interface ResponseInputRendererProps {
   question: any;
@@ -30,9 +31,10 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   onSaveActionPlan,
   readOnly = false
 }) => {
-  const responseType = question.responseType || question.tipo_resposta || "text";
-  const questionText = question.text || question.pergunta || "";
-
+  // Normalizar o tipo de resposta
+  const dbResponseType = question.responseType || question.tipo_resposta || "sim/não";
+  const responseType = databaseToFrontendResponseType(dbResponseType);
+  
   console.log("ResponseInputRenderer: rendering with responseType:", responseType);
   console.log("ResponseInputRenderer: current response:", response);
 
@@ -146,7 +148,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     );
   }
 
-  if (responseType === "numeric" || responseType === "number") {
+  if (responseType === "numeric") {
     return (
       <div className="space-y-2">
         <NumberInput
@@ -236,7 +238,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   return (
     <div className="p-4 border border-red-300 bg-red-50 rounded-md">
       <p className="text-red-700">
-        Tipo de resposta não suportado: {responseType}
+        Tipo de resposta não suportado: {responseType} (original: {dbResponseType})
       </p>
     </div>
   );

@@ -7,7 +7,6 @@ import { useChecklistState } from "./useChecklistState";
 import { useChecklistQuestions } from "./useChecklistQuestions";
 import { useChecklistGroups } from "./useChecklistGroups";
 import { useChecklistSubmit } from "./useChecklistSubmit";
-import { useChecklistAI } from "./useChecklistAI";
 import { handleError } from "@/utils/errorHandling";
 import { ChecklistGroup, ChecklistQuestion } from "@/types/newChecklist";
 
@@ -60,9 +59,6 @@ export function useChecklistEditorContext() {
     questions,
     setQuestions
   );
-  
-  // AI functionality
-  const { generateQuestions, isGenerating } = useChecklistAI();
   
   // Submission logic
   const {
@@ -146,53 +142,6 @@ export function useChecklistEditorContext() {
     }
   }, [error, navigate]);
   
-  // AI question generation
-  const handleAIExpand = useCallback(async (prompt: string, numQuestions: number) => {
-    try {
-      const aiQuestions = await generateQuestions(prompt, numQuestions);
-      const currentMaxOrder = Math.max(...questions.map(q => q.order), 0);
-      
-      const questionsWithOrder = aiQuestions.map((question, index) => ({
-        ...question,
-        order: currentMaxOrder + index + 1,
-        groupId: groups[0]?.id || "default"
-      }));
-      
-      setQuestions(prev => [...prev, ...questionsWithOrder]);
-      toast.success(`${aiQuestions.length} perguntas adicionadas com IA!`);
-    } catch (error) {
-      handleError(error instanceof Error ? error : new Error(String(error)), "Erro ao gerar perguntas com IA");
-    }
-  }, [generateQuestions, questions, groups, setQuestions]);
-  
-  // CSV import
-  const handleCSVImport = useCallback((importedQuestions: any[]) => {
-    const currentMaxOrder = Math.max(...questions.map(q => q.order), 0);
-    
-    const questionsToAdd = importedQuestions.map((q, index) => ({
-      id: `csv-imported-${Date.now()}-${index}`,
-      text: q.pergunta,
-      responseType: q.tipo_resposta === "sim/não" ? "yes_no" as const : 
-                   q.tipo_resposta === "texto" ? "text" as const :
-                   q.tipo_resposta === "numérico" ? "numeric" as const :
-                   q.tipo_resposta === "seleção múltipla" ? "multiple_choice" as const :
-                   q.tipo_resposta === "foto" ? "photo" as const :
-                   q.tipo_resposta === "assinatura" ? "signature" as const :
-                   "yes_no" as const,
-      isRequired: q.obrigatorio,
-      weight: 1,
-      allowsPhoto: false,
-      allowsVideo: false,
-      allowsAudio: false,
-      allowsFiles: false,
-      order: currentMaxOrder + index + 1,
-      groupId: groups[0]?.id || "default",
-      options: q.opcoes || []
-    }));
-    
-    setQuestions(prev => [...prev, ...questionsToAdd]);
-  }, [questions, groups, setQuestions]);
-  
   // Computed properties with memoization
   const questionsByGroup = useMemo(() => {
     const result = new Map<string, ChecklistQuestion[]>();
@@ -231,7 +180,7 @@ export function useChecklistEditorContext() {
       .sort((a, b) => a.order - b.order);
   }, [groups, questionsByGroup]);
   
-  // Action handlers
+  // Manual save handler
   const handleSave = useCallback(async () => {
     try {
       setIsSubmitting(true);
@@ -239,6 +188,7 @@ export function useChecklistEditorContext() {
       setIsSubmitting(false);
       
       if (success) {
+        toast.success("Checklist salvo com sucesso!");
         return true;
       }
       return false;
@@ -297,7 +247,6 @@ export function useChecklistEditorContext() {
     companyId,
     responsibleId,
     dueDate,
-    isGeneratingAI: isGenerating,
     
     // Setters
     setTitle,
@@ -321,8 +270,6 @@ export function useChecklistEditorContext() {
     handleSubmit,
     handleSave,
     handleStartInspection,
-    handleAIExpand,
-    handleCSVImport,
     toggleAllMediaOptions,
     refetch
   };
