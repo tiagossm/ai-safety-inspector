@@ -1,12 +1,13 @@
+
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { ChecklistEditActions } from "@/components/new-checklist/edit/ChecklistEditActions";
 import { LoadingState } from "@/components/new-checklist/edit/LoadingState";
 import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 import { ChecklistEditorProvider } from "@/contexts/ChecklistEditorContext";
-import { ChecklistHeader } from "@/components/new-checklist/edit/ChecklistHeader";
+import { ChecklistHeaderExpanded } from "@/components/new-checklist/edit/ChecklistHeaderExpanded";
 import { useChecklistEditorContext } from "@/hooks/new-checklist/useChecklistEditorContext";
-import { ChecklistBasicInfo } from "./ChecklistBasicInfo";
+import { ChecklistBasicInfoExpanded } from "./ChecklistBasicInfoExpanded";
 import { ChecklistQuestionList } from "./ChecklistQuestionList";
 import { toast } from "sonner";
 
@@ -54,9 +55,6 @@ export function ChecklistEditorContainer() {
     id: editorContext.id,
   };
   
-  // Remova o auto-save ao navegar de etapa (deixe apenas o save manual)
-  // Remova qualquer chamada automática de handleSave em useEffect ou navegação de etapas
-
   // Enhanced save handler to provide feedback and navigate after success
   const handleSave = async (): Promise<void> => {
     try {
@@ -84,15 +82,6 @@ export function ChecklistEditorContainer() {
     }
     try {
       toast.info("Preparando inspeção...", { duration: 2000 });
-      // Remova o save automático antes de iniciar inspeção
-      // if (editorContext.handleSave) {
-      //   const saveSuccess = await editorContext.handleSave();
-      //   if (!saveSuccess) {
-      //     toast.error("Não foi possível salvar o checklist antes de iniciar a inspeção", { duration: 5000 });
-      //     return;
-      //   }
-      // }
-      // Navegue diretamente para inspeção
       console.log(`Redirecionando para inspeção com checklistId=${editorContext.id}`);
       toast.success("Redirecionando para a inspeção...", { duration: 2000 });
       navigate(`/inspections/new?checklistId=${editorContext.id}`);
@@ -106,7 +95,7 @@ export function ChecklistEditorContainer() {
     <ChecklistEditorProvider value={contextValue}>
       <div className="space-y-6">
         {/* Header section */}
-        <ChecklistHeader 
+        <ChecklistHeaderExpanded 
           onBack={() => navigate("/new-checklists")}
           onRefresh={() => {
             if (editorContext.id) {
@@ -118,24 +107,35 @@ export function ChecklistEditorContainer() {
           }}
           onStartInspection={handleStartInspection}
           onSave={handleSave}
+          onAIExpand={editorContext.handleAIExpand}
+          onCSVImport={editorContext.handleCSVImport}
+          isGeneratingAI={editorContext.isGeneratingAI}
+          isSaving={editorContext.isSubmitting}
         />
+        
         {/* Form section */}
         <form onSubmit={(e) => {
           e.preventDefault();
           handleSave();
         }} className="space-y-6">
           {/* Basic information section */}
-          <ChecklistBasicInfo
+          <ChecklistBasicInfoExpanded
             title={editorContext.title}
             description={editorContext.description}
             category={editorContext.category}
             isTemplate={editorContext.isTemplate}
             status={editorContext.status}
+            companyId={editorContext.companyId}
+            responsibleId={editorContext.responsibleId}
+            dueDate={editorContext.dueDate}
             onTitleChange={editorContext.setTitle}
             onDescriptionChange={editorContext.setDescription}
             onCategoryChange={editorContext.setCategory}
             onIsTemplateChange={editorContext.setIsTemplate}
             onStatusChange={editorContext.setStatus}
+            onCompanyChange={editorContext.setCompanyId}
+            onResponsibleChange={editorContext.setResponsibleId}
+            onDueDateChange={editorContext.setDueDate}
           />
           
           {/* Questions section */}

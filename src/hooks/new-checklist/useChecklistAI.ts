@@ -1,89 +1,43 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { AIAssistantType } from "@/types/AIAssistantType";
-import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
-import { supabase } from "@/integrations/supabase/client";
-import { handleError, validateRequiredFields } from "@/utils/errorHandling";
-
-export { type AIAssistantType };
 
 export function useChecklistAI() {
-  const [prompt, setPrompt] = useState<string>("");
-  const [questionCount, setQuestionCount] = useState<number>(5);
-  const [isGenerating, setIsGenerating] = useState<boolean>(false);
-  const [selectedAssistant, setSelectedAssistant] = useState<AIAssistantType | null>(null);
-  const [openAIAssistant, setOpenAIAssistant] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  const generateChecklist = async (checklistData: NewChecklistPayload) => {
+  const generateQuestions = async (prompt: string, numQuestions: number) => {
     setIsGenerating(true);
     
-    // Validar campos obrigatórios
-    if (!validateRequiredFields({
-      categoria: checklistData.category,
-      empresa: checklistData.company_id
-    })) {
-      setIsGenerating(false);
-      return { success: false, error: "Campos obrigatórios não preenchidos" };
-    }
-    
     try {
-      console.log("Iniciando geração de checklist por IA com dados:", checklistData);
+      // Simular chamada para API de IA
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      const requestBody: any = {
-        title: checklistData.title,
-        description: checklistData.description,
-        category: checklistData.category,
-        companyId: checklistData.company_id,
-        questionCount: questionCount,
-        prompt: prompt
-      };
-      
-      if (openAIAssistant) {
-        requestBody.assistantId = openAIAssistant;
-      }
-      
-      console.log("Enviando requisição para generate-checklist-v2:", requestBody);
-      
-      const { data, error } = await supabase.functions.invoke('generate-checklist-v2', {
-        body: requestBody
-      });
+      // Gerar perguntas de exemplo baseadas no prompt
+      const questions = Array.from({ length: numQuestions }, (_, index) => ({
+        id: `ai-generated-${Date.now()}-${index}`,
+        text: `Pergunta gerada por IA ${index + 1}: ${prompt.substring(0, 50)}...`,
+        responseType: "yes_no" as const,
+        isRequired: true,
+        weight: 1,
+        allowsPhoto: false,
+        allowsVideo: false,
+        allowsAudio: false,
+        allowsFiles: false,
+        order: 0, // Will be set by the caller
+        groupId: "default"
+      }));
 
-      console.log("Resposta de generate-checklist-v2:", data, error);
-
-      if (error) {
-        throw new Error(`Erro na geração por IA: ${error.message || "Erro desconhecido"}`);
-      }
-
-      if (!data || !data.success) {
-        throw new Error(data?.error || 'Falha ao gerar checklist');
-      }
-      
-      const questions: ChecklistQuestion[] = data.questions || [];
-      const groups: ChecklistGroup[] = data.groups || [];
-      
-      console.log(`Geração bem-sucedida! Recebidas ${questions.length} perguntas e ${groups.length} grupos`);
-      
-      toast.success("Checklist gerado com sucesso!");
-      return { success: true, questions, groups, checklistData };
-    } catch (error: any) {
-      handleError(error, "Erro na geração por IA");
-      return { success: false, error: error.message || "Erro desconhecido" };
+      return questions;
+    } catch (error) {
+      console.error("Erro ao gerar perguntas com IA:", error);
+      throw new Error("Falha ao gerar perguntas com IA");
     } finally {
       setIsGenerating(false);
     }
   };
 
   return {
-    prompt,
-    setPrompt,
-    questionCount,
-    setQuestionCount,
-    isGenerating,
-    selectedAssistant,
-    setSelectedAssistant,
-    openAIAssistant,
-    setOpenAIAssistant,
-    generateChecklist
+    generateQuestions,
+    isGenerating
   };
 }

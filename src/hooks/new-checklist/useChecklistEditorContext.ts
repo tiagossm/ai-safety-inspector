@@ -1,3 +1,4 @@
+
 import { useCallback, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -6,6 +7,7 @@ import { useChecklistState } from "./useChecklistState";
 import { useChecklistQuestions } from "./useChecklistQuestions";
 import { useChecklistGroups } from "./useChecklistGroups";
 import { useChecklistSubmit } from "./useChecklistSubmit";
+import { useChecklistAI } from "./useChecklistAI";
 import { handleError } from "@/utils/errorHandling";
 import { ChecklistGroup, ChecklistQuestion } from "@/types/newChecklist";
 
@@ -26,7 +28,10 @@ export function useChecklistEditorContext() {
     viewMode, setViewMode,
     deletedQuestionIds, setDeletedQuestionIds,
     isSubmitting, setIsSubmitting,
-    enableAllMedia, setEnableAllMedia
+    enableAllMedia, setEnableAllMedia,
+    companyId, setCompanyId,
+    responsibleId, setResponsibleId,
+    dueDate, setDueDate
   } = useChecklistState(checklist);
   
   // Questions management
@@ -56,6 +61,9 @@ export function useChecklistEditorContext() {
     setQuestions
   );
   
+  // AI functionality
+  const { generateQuestions, isGenerating } = useChecklistAI();
+  
   // Submission logic
   const {
     handleSubmit
@@ -68,7 +76,10 @@ export function useChecklistEditorContext() {
     status,
     questions,
     groups,
-    deletedQuestionIds
+    deletedQuestionIds,
+    companyId,
+    responsibleId,
+    dueDate
   );
   
   // Initialize form with data from the checklist when it's loaded
@@ -78,6 +89,9 @@ export function useChecklistEditorContext() {
       setDescription(checklist.description || "");
       setCategory(checklist.category || "");
       setIsTemplate(checklist.isTemplate || false);
+      setCompanyId(checklist.company_id || undefined);
+      setResponsibleId(checklist.responsible_id || undefined);
+      setDueDate(checklist.due_date || undefined);
       
       // Ensure we're setting a properly typed status value
       const checklistStatus = checklist.status === "inactive" ? "inactive" : "active";
@@ -103,11 +117,10 @@ export function useChecklistEditorContext() {
           order: 0
         };
         
-        // Use a properly typed responseType value
         const defaultQuestion: ChecklistQuestion = {
           id: `new-${Date.now()}`,
           text: "",
-          responseType: "yes_no", // This must be one of the allowed types
+          responseType: "yes_no",
           isRequired: true,
           weight: 1,
           allowsPhoto: false,
@@ -116,14 +129,14 @@ export function useChecklistEditorContext() {
           allowsFiles: false,
           order: 0,
           groupId: "default",
-          options: [] // Properly initialize options as an empty array
+          options: []
         };
         
         setGroups([defaultGroup]);
         setQuestions([defaultQuestion]);
       }
     }
-  }, [checklist, setTitle, setDescription, setCategory, setIsTemplate, setStatus, setQuestions, setGroups]);
+  }, [checklist, setTitle, setDescription, setCategory, setIsTemplate, setStatus, setQuestions, setGroups, setCompanyId, setResponsibleId, setDueDate]);
   
   // Handle errors
   useEffect(() => {
@@ -132,6 +145,53 @@ export function useChecklistEditorContext() {
       navigate("/new-checklists");
     }
   }, [error, navigate]);
+  
+  // AI question generation
+  const handleAIExpand = useCallback(async (prompt: string, numQuestions: number) => {
+    try {
+      const aiQuestions = await generateQuestions(prompt, numQuestions);
+      const currentMaxOrder = Math.max(...questions.map(q => q.order), 0);
+      
+      const questionsWithOrder = aiQuestions.map((question, index) => ({
+        ...question,
+        order: currentMaxOrder + index + 1,
+        groupId: groups[0]?.id || "default"
+      }));
+      
+      setQuestions(prev => [...prev, ...questionsWithOrder]);
+      toast.success(`${aiQuestions.length} perguntas adicionadas com IA!`);
+    } catch (error) {
+      handleError(error instanceof Error ? error : new Error(String(error)), "Erro ao gerar perguntas com IA");
+    }
+  }, [generateQuestions, questions, groups, setQuestions]);
+  
+  // CSV import
+  const handleCSVImport = useCallback((importedQuestions: any[]) => {
+    const currentMaxOrder = Math.max(...questions.map(q => q.order), 0);
+    
+    const questionsToAdd = importedQuestions.map((q, index) => ({
+      id: `csv-imported-${Date.now()}-${index}`,
+      text: q.pergunta,
+      responseType: q.tipo_resposta === "sim/não" ? "yes_no" as const : 
+                   q.tipo_resposta === "texto" ? "text" as const :
+                   q.tipo_resposta === "numérico" ? "numeric" as const :
+                   q.tipo_resposta === "seleção múltipla" ? "multiple_choice" as const :
+                   q.tipo_resposta === "foto" ? "photo" as const :
+                   q.tipo_resposta === "assinatura" ? "signature" as const :
+                   "yes_no" as const,
+      isRequired: q.obrigatorio,
+      weight: 1,
+      allowsPhoto: false,
+      allowsVideo: false,
+      allowsAudio: false,
+      allowsFiles: false,
+      order: currentMaxOrder + index + 1,
+      groupId: groups[0]?.id || "default",
+      options: q.opcoes || []
+    }));
+    
+    setQuestions(prev => [...prev, ...questionsToAdd]);
+  }, [questions, groups, setQuestions]);
   
   // Computed properties with memoization
   const questionsByGroup = useMemo(() => {
@@ -197,7 +257,6 @@ export function useChecklistEditorContext() {
       }
       
       setIsSubmitting(true);
-      // First save the checklist and only continue if save is successful
       const success = await handleSubmit();
       
       if (!success) {
@@ -206,7 +265,6 @@ export function useChecklistEditorContext() {
         return false;
       }
       
-      // Navigate directly to inspection execution page
       console.log(`Redirecionando para execução da inspeção com checklistId=${id}`);
       toast.success("Navegando para execução de inspeção...");
       navigate(`/inspections/${id}/view`);
@@ -236,6 +294,10 @@ export function useChecklistEditorContext() {
     enableAllMedia,
     isLoading: loading,
     error,
+    companyId,
+    responsibleId,
+    dueDate,
+    isGeneratingAI: isGenerating,
     
     // Setters
     setTitle,
@@ -244,6 +306,9 @@ export function useChecklistEditorContext() {
     setIsTemplate,
     setStatus,
     setViewMode,
+    setCompanyId,
+    setResponsibleId,
+    setDueDate,
     
     // Action handlers
     handleAddGroup,
@@ -256,6 +321,8 @@ export function useChecklistEditorContext() {
     handleSubmit,
     handleSave,
     handleStartInspection,
+    handleAIExpand,
+    handleCSVImport,
     toggleAllMediaOptions,
     refetch
   };
