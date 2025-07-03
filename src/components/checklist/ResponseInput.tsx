@@ -23,7 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { SubChecklistButton } from "@/components/new-checklist/question-editor/SubChecklistButton";
 import { toast } from "sonner";
-import { frontendToDatabaseResponseType, databaseToFrontendResponseType } from "@/utils/responseTypeMap";
+import { STANDARD_RESPONSE_TYPES, frontendToDatabaseResponseType, databaseToFrontendResponseType } from "@/utils/responseTypeMap";
 
 interface QuestionEditorProps {
   question: ChecklistQuestion;
@@ -45,7 +45,7 @@ export function QuestionEditor({
 
   // Convert database response type to frontend type for proper display
   const frontendResponseType = question.responseType 
-    ? databaseToFrontendResponseType(question.responseType) as "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature" | "time" | "date"
+    ? databaseToFrontendResponseType(question.responseType)
     : "yes_no";
 
   const handleUpdate = (field: keyof ChecklistQuestion, value: any) => {
@@ -141,14 +141,11 @@ export function QuestionEditor({
                 <SelectValue placeholder="Selecione o tipo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="yes_no">Sim/Não</SelectItem>
-                <SelectItem value="text">Texto</SelectItem>
-                <SelectItem value="multiple_choice">Múltipla escolha</SelectItem>
-                <SelectItem value="numeric">Numérico</SelectItem>
-                <SelectItem value="photo">Foto</SelectItem>
-                <SelectItem value="signature">Assinatura</SelectItem>
-                <SelectItem value="time">Hora</SelectItem>
-                <SelectItem value="date">Data</SelectItem>
+                {STANDARD_RESPONSE_TYPES.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

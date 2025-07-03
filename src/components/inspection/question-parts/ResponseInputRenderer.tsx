@@ -6,6 +6,10 @@ import { DateResponseInput } from "./response-types/DateResponseInput";
 import { TimeResponseInput } from "./response-types/TimeResponseInput";
 import { NumberInput } from "@/components/inspection/question-inputs/NumberInput";
 import { MultipleChoiceInput } from "@/components/inspection/question-inputs/MultipleChoiceInput";
+import { ParagraphInput } from "@/components/inspection/question-inputs/ParagraphInput";
+import { DropdownInput } from "@/components/inspection/question-inputs/DropdownInput";
+import { MultipleSelectInput } from "@/components/inspection/question-inputs/MultipleSelectInput";
+import { DateTimeInput } from "@/components/inspection/question-inputs/DateTimeInput";
 import { PhotoInput } from "@/components/inspection/question-inputs/PhotoInput";
 import { SignatureInput } from "@/components/checklist/SignatureInput";
 import { databaseToFrontendResponseType } from "@/utils/responseTypeMap";
@@ -117,6 +121,96 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
         onApplyAISuggestion={(suggestion: string) =>
           handleResponseWithAnalysis({ aiSuggestion: suggestion })
         }
+        readOnly={readOnly}
+      />
+    );
+  }
+
+  if (responseType === "paragraph") {
+    return (
+      <div className="space-y-2">
+        <ParagraphInput
+          value={safeResponse.value}
+          onChange={handleSimpleValueChange}
+          readOnly={readOnly}
+        />
+        {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
+          <PhotoInput
+            mediaUrls={mediaUrls}
+            onAddMedia={() => console.log("Adicionar mídia para questão paragraph")}
+            onDeleteMedia={(url) => {
+              const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
+              handleMediaChange(updatedUrls);
+            }}
+            allowsPhoto={question.allowsPhoto}
+            allowsVideo={question.allowsVideo}
+            allowsAudio={question.allowsAudio}
+            allowsFiles={question.allowsFiles}
+          />
+        )}
+      </div>
+    );
+  }
+
+  if (responseType === "dropdown") {
+    return (
+      <div className="space-y-2">
+        <DropdownInput 
+          options={question.options || []}
+          value={safeResponse.value}
+          onChange={handleSimpleValueChange}
+          readOnly={readOnly}
+        />
+        {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
+          <PhotoInput
+            mediaUrls={mediaUrls}
+            onAddMedia={() => console.log("Adicionar mídia para questão dropdown")}
+            onDeleteMedia={(url) => {
+              const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
+              handleMediaChange(updatedUrls);
+            }}
+            allowsPhoto={question.allowsPhoto}
+            allowsVideo={question.allowsVideo}
+            allowsAudio={question.allowsAudio}
+            allowsFiles={question.allowsFiles}
+          />
+        )}
+      </div>
+    );
+  }
+
+  if (responseType === "multiple_select") {
+    return (
+      <div className="space-y-2">
+        <MultipleSelectInput 
+          options={question.options || []}
+          value={Array.isArray(safeResponse.value) ? safeResponse.value : []}
+          onChange={(value) => handleSimpleValueChange(value)}
+          readOnly={readOnly}
+        />
+        {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
+          <PhotoInput
+            mediaUrls={mediaUrls}
+            onAddMedia={() => console.log("Adicionar mídia para questão multiple_select")}
+            onDeleteMedia={(url) => {
+              const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
+              handleMediaChange(updatedUrls);
+            }}
+            allowsPhoto={question.allowsPhoto}
+            allowsVideo={question.allowsVideo}
+            allowsAudio={question.allowsAudio}
+            allowsFiles={question.allowsFiles}
+          />
+        )}
+      </div>
+    );
+  }
+
+  if (responseType === "datetime") {
+    return (
+      <DateTimeInput
+        value={safeResponse.value}
+        onChange={(value) => handleSimpleValueChange(value)}
         readOnly={readOnly}
       />
     );

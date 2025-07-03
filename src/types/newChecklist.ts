@@ -105,7 +105,7 @@ export interface BatchUpdateResult {
 export interface ChecklistQuestion {
   id: string;
   text: string;
-  responseType: "yes_no" | "text" | "numeric" | "multiple_choice" | "photo" | "signature" | "time" | "date";
+  responseType: "text" | "paragraph" | "numeric" | "yes_no" | "dropdown" | "multiple_choice" | "multiple_select" | "date" | "time" | "datetime";
   isRequired: boolean;
   options?: string[];
   weight: number;
