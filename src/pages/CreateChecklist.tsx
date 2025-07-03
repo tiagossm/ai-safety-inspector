@@ -128,14 +128,8 @@ export default function CreateChecklist() {
             <ImportCreateForm 
               form={form}
               setForm={setForm}
-              users={users}
-              loadingUsers={loadingUsers}
-              file={file}
-              onFileChange={handleFileChange}
               companies={companies}
               loadingCompanies={loadingCompanies}
-              onSubmit={handleSubmitForManualAndImport}
-              isSubmitting={isSubmitting}
             />
           </TabsContent>
         </Tabs>

@@ -45,7 +45,7 @@ export function QuestionEditor({
 
   // Convert database response type to frontend type for proper display
   const frontendResponseType = question.responseType 
-    ? databaseToFrontendResponseType(question.responseType) as "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature"
+    ? databaseToFrontendResponseType(question.responseType) as "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature" | "time" | "date"
     : "yes_no";
 
   const handleUpdate = (field: keyof ChecklistQuestion, value: any) => {
@@ -194,69 +194,73 @@ export function QuestionEditor({
           </div>
         </div>
 
-        {frontendResponseType === "multiple_choice" ? (
+        {frontendResponseType === "multiple_choice" && (
           <div className="mt-4 space-y-2">
-            <div className="flex justify-between items-center">
-              <label className="text-sm font-medium">Opções de resposta</label>
-              <Button 
-                type="button" 
-                variant="ghost" 
-                size="sm"
-                onClick={() => setShowOptionsEditor(!showOptionsEditor)}
-              >
-                {showOptionsEditor ? "Ocultar" : "Editar opções"}
-              </Button>
-            </div>
-
-            {showOptionsEditor && (
-              <div className="space-y-2 mt-2 border-t pt-2">
-                {(question.options || []).map((option, index) => (
-                  <div key={index} className="flex gap-2">
-                    <Input
-                      value={option}
-                      onChange={(e) => {
-                        const newOptions = [...(question.options || [])];
-                        newOptions[index] = e.target.value;
-                        handleUpdate("options", newOptions);
-                      }}
-                      className="flex-1"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleRemoveOption(index)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-                <div className="flex gap-2 mt-2">
+            <label className="text-sm font-medium mb-1 block">Opções</label>
+            <div className="space-y-2">
+              {(question.options || []).map((option, index) => (
+                <label
+                  key={index}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <input
+                    type="radio"
+                    disabled
+                    className="w-4 h-4"
+                    style={{ appearance: 'auto' }}
+                  />
                   <Input
-                    placeholder="Nova opção"
-                    value={newOption}
-                    onChange={(e) => setNewOption(e.target.value)}
-                    className="flex-1"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleAddOption();
-                      }
+                    value={option}
+                    onChange={(e) => {
+                      const newOptions = [...(question.options || [])];
+                      newOptions[index] = e.target.value;
+                      handleUpdate("options", newOptions);
                     }}
+                    className="flex-1"
                   />
                   <Button
                     type="button"
-                    variant="outline"
-                    onClick={handleAddOption}
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleRemoveOption(index)}
+                    aria-label="Remover opção"
                   >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Adicionar
+                    <Trash2 className="h-4 w-4" />
                   </Button>
-                </div>
-              </div>
-            )}
+                </label>
+              ))}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  disabled
+                  className="w-4 h-4"
+                  style={{ appearance: 'auto' }}
+                />
+                <Input
+                  placeholder="Adicionar opção"
+                  value={newOption}
+                  onChange={(e) => setNewOption(e.target.value)}
+                  className="flex-1"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddOption();
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleAddOption}
+                  aria-label="Adicionar opção"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar
+                </Button>
+              </label>
+            </div>
           </div>
-        ) : null}
+        )}
 
         <div>
           <label className="text-sm font-medium mb-1 block">Dica para o inspetor</label>

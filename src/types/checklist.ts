@@ -7,16 +7,6 @@ export interface CollaboratorType {
   initials?: string; // Adding the initials property as optional
 }
 
-export type ResponseType = 
-  | "sim/não" 
-  | "texto" 
-  | "numérico" 
-  | "seleção múltipla" 
-  | "foto" 
-  | "assinatura" 
-  | "data" 
-  | "hora";
-
 export interface Checklist {
   id: string;
   title: string;

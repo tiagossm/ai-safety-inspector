@@ -1,219 +1,141 @@
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import ChecklistForm from "@/components/checklists/ChecklistForm";
-import { 
-  FileCheck, 
-  FileText, 
-  Upload, 
-  Sparkles, 
-  ArrowLeft 
-} from "lucide-react";
-import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
-import { StandardResponseType } from "@/types/responseTypes";
-import { AIModeContent } from "@/components/new-checklist/create/AIModeContent";
-
-type CreationMode = "manual" | "ai" | "csv" | null;
-
-interface GroupedQuestions {
-  groupTitle: string;
-  questions: any[];
-}
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FileText, Upload, Bot } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { BackButton } from "@/components/checklists/create-forms/FormActions";
+import { AIChecklistCreator } from "@/components/checklists/create-forms/AIChecklistCreator";
+import { ManualCreateForm } from "@/components/checklists/create-forms/ManualCreateForm";
+import { ImportCreateForm } from "@/components/checklists/create-forms/ImportCreateForm";
+import { useChecklistCreation } from "@/hooks/checklist/useChecklistCreation";
 
 export default function NewChecklistCreate() {
   const navigate = useNavigate();
-  const [selectedMode, setSelectedMode] = useState<CreationMode>(null);
+  const [activeTab, setActiveTab] = useState<string>("manual");
+  
+  const {
+    form,
+    setForm,
+    users,
+    isSubmitting,
+    loadingUsers,
+    file,
+    handleFileChange,
+    clearFile,
+    questions,
+    handleAddQuestion,
+    handleRemoveQuestion,
+    handleQuestionChange,
+    handleSubmit,
+    companies,
+    loadingCompanies,
+    aiPrompt,
+    setAiPrompt,
+    numQuestions,
+    setNumQuestions,
+    openAIAssistant,
+    setOpenAIAssistant
+  } = useChecklistCreation();
 
-  const handleModeSelect = (mode: CreationMode) => {
-    setSelectedMode(mode);
+  const handleSubmitForManualAndImport = async (e: React.FormEvent): Promise<boolean> => {
+    const result = await handleSubmit(e, activeTab);
+    return result;
   };
-
-  const handleBack = () => {
-    if (selectedMode) {
-      setSelectedMode(null);
-    } else {
-      navigate("/new-checklists");
-    }
-  };
-
-  const handleChecklistCreated = (checklistData: any) => {
-    console.log("Checklist criado:", checklistData);
-    navigate("/new-checklists");
-  };
-
-  const handleQuestionsGenerated = (questions: ChecklistQuestion[]) => {
-    const defaultQuestion: ChecklistQuestion = {
-      id: `new-${Date.now()}`,
-      text: "",
-      responseType: "yes_no",
-      isRequired: true,
-      weight: 1,
-      allowsPhoto: false,
-      allowsVideo: false,
-      allowsAudio: false,
-      allowsFiles: false,
-      order: 0,
-      groupId: "default",
-      level: 0,
-      path: `new-${Date.now()}`,
-      isConditional: false,
-      options: []
-    };
-
-    const defaultGroup: ChecklistGroup = {
-      id: "default", 
-      title: "Geral",
-      order: 0
-    };
-
-    const questionsWithGroupId = questions.map(q => ({
-      ...q,
-      groupId: "default",
-      options: q.options || []
-    }));
-
-    const sessionData = {
-      checklistData: {
-        title: "Checklist Gerado por IA",
-        description: "Checklist criado automaticamente com inteligência artificial",
-        category: "Geral",
-        status: "active",
-        isTemplate: false
-      },
-      questions: questionsWithGroupId,
-      groups: [defaultGroup],
-      mode: "ai"
-    };
-
-    sessionStorage.setItem("checklistEditorData", JSON.stringify(sessionData));
-    navigate("/new-checklists/editor");
-  };
-
-  const handleCSVImported = (groupedQuestions: GroupedQuestions[]) => {
-    const groups: ChecklistGroup[] = groupedQuestions.map((group, index) => ({
-      id: `group-${index}`,
-      title: group.groupTitle,
-      order: index
-    }));
-
-    const questions: ChecklistQuestion[] = [];
-    let questionOrder = 0;
-
-    groupedQuestions.forEach((group, groupIndex) => {
-      group.questions.forEach((q) => {
-        questions.push({
-          id: `question-${questionOrder}`,
-          text: q.text,
-          responseType: q.type as StandardResponseType,
-          isRequired: true,
-          weight: 1,
-          allowsPhoto: false,
-          allowsVideo: false,
-          allowsAudio: false,
-          allowsFiles: false,
-          order: questionOrder,
-          options: q.options || [],
-          groupId: `group-${groupIndex}`,
-          level: 0,
-          path: `question-${questionOrder}`,
-          isConditional: false
-        });
-        questionOrder++;
-      });
-    });
-
-    const sessionData = {
-      checklistData: {
-        title: "Checklist Importado",
-        description: "Checklist criado a partir de importação CSV",
-        category: "Importado",
-        status: "active",
-        isTemplate: false
-      },
-      questions,
-      groups,
-      mode: "csv"
-    };
-
-    sessionStorage.setItem("checklistEditorData", JSON.stringify(sessionData));
-    navigate("/new-checklists/editor");
+  
+  const handleSubmitForAI = async (e: React.FormEvent): Promise<void> => {
+    await handleSubmit(e, "ai");
   };
 
   return (
-    <div>
-      {selectedMode === null ? (
-        <div className="container mx-auto py-10">
-          <Button variant="ghost" onClick={handleBack} className="mb-4">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Voltar
-          </Button>
-          <Card>
-            <CardHeader>
-              <CardTitle>Criar Novo Checklist</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-6">
-              <Button className="w-full h-16 flex flex-col justify-center items-center" onClick={() => handleModeSelect("manual")}>
-                <FileCheck className="h-6 w-6 mb-1" />
-                Criar Manualmente
-              </Button>
-              <Separator />
-              <Button className="w-full h-16 flex flex-col justify-center items-center" onClick={() => handleModeSelect("ai")}>
-                <Sparkles className="h-6 w-6 mb-1" />
-                Gerar com IA
-                <Badge variant="secondary" className="ml-2">Em breve</Badge>
-              </Button>
-              <Separator />
-              <Button className="w-full h-16 flex flex-col justify-center items-center" onClick={() => handleModeSelect("csv")}>
-                <Upload className="h-6 w-6 mb-1" />
-                Importar de CSV
-                <Badge variant="secondary" className="ml-2">Em breve</Badge>
-              </Button>
-            </CardContent>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <BackButton onClick={() => navigate("/new-checklists")} />
+            <h1 className="text-2xl font-bold">Criar Novo Checklist</h1>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+          <Card 
+            className={`p-4 cursor-pointer hover:border-gray-400 transition-all ${activeTab === "manual" ? "bg-gray-50 border-gray-400" : "bg-white"}`}
+            onClick={() => setActiveTab("manual")}
+          >
+            <div className="flex items-center justify-center flex-col text-center gap-2 py-2">
+              <FileText className="h-6 w-6 text-gray-700" />
+              <span className="font-medium">Criação Manual</span>
+            </div>
+          </Card>
+          
+          <Card 
+            className={`p-4 cursor-pointer hover:border-gray-400 transition-all ${activeTab === "ai" ? "bg-gray-50 border-gray-400" : "bg-white"}`}
+            onClick={() => setActiveTab("ai")}
+          >
+            <div className="flex items-center justify-center flex-col text-center gap-2 py-2">
+              <Bot className="h-6 w-6 text-gray-700" />
+              <span className="font-medium">Gerado por IA</span>
+            </div>
+          </Card>
+          
+          <Card 
+            className={`p-4 cursor-pointer hover:border-gray-400 transition-all ${activeTab === "import" ? "bg-gray-50 border-gray-400" : "bg-white"}`}
+            onClick={() => setActiveTab("import")}
+          >
+            <div className="flex items-center justify-center flex-col text-center gap-2 py-2">
+              <Upload className="h-6 w-6 text-gray-700" />
+              <span className="font-medium">Importar Planilha</span>
+            </div>
           </Card>
         </div>
-      ) : (
-        <div className="container mx-auto py-10">
-          <Button variant="ghost" onClick={handleBack} className="mb-4">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Voltar
-          </Button>
 
-          {selectedMode === "manual" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Criar Checklist Manualmente</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ChecklistForm onCreate={handleChecklistCreated} />
-              </CardContent>
-            </Card>
-          )}
-
-          {selectedMode === "ai" && (
-            <AIModeContent
-              onQuestionsGenerated={handleQuestionsGenerated}
-              onCancel={handleBack}
-            />
-          )}
-
-          {selectedMode === "csv" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Importar Checklist de CSV</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div>
-                  <p>Funcionalidade de importação CSV em breve.</p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+        <div className="mt-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="hidden">
+              <TabsTrigger value="manual">Criação Manual</TabsTrigger>
+              <TabsTrigger value="ai">Gerado por IA</TabsTrigger>
+              <TabsTrigger value="import">Importar Planilha</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="manual" className="py-4">
+              <ManualCreateForm 
+                form={form}
+                setForm={setForm}
+                users={users}
+                loadingUsers={loadingUsers}
+                questions={questions}
+                onAddQuestion={handleAddQuestion}
+                onRemoveQuestion={handleRemoveQuestion}
+                onQuestionChange={handleQuestionChange}
+                companies={companies}
+                loadingCompanies={loadingCompanies}
+                onSubmit={handleSubmitForManualAndImport}
+                isSubmitting={isSubmitting}
+              />
+            </TabsContent>
+            
+            <TabsContent value="ai" className="py-4">
+              <AIChecklistCreator 
+                form={form}
+                setForm={setForm}
+                onSubmit={handleSubmitForAI}
+                isSubmitting={isSubmitting}
+                companies={companies}
+                loadingCompanies={loadingCompanies}
+              />
+            </TabsContent>
+            
+            <TabsContent value="import" className="py-4">
+              <ImportCreateForm 
+                form={form}
+                setForm={setForm}
+                companies={companies}
+                loadingCompanies={loadingCompanies}
+              />
+            </TabsContent>
+          </Tabs>
         </div>
-      )}
+      </div>
     </div>
   );
 }

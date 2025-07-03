@@ -1,10 +1,6 @@
 
 export * from './YesNoResponseInput';
 export * from './TextResponseInput';
-export * from './ParagraphResponseInput';
-export * from './CheckboxesResponseInput';
-export * from './DropdownResponseInput';
-export * from './DateTimeResponseInput';
 export * from './ActionPlanDisplay';
 export * from './NumberResponseInput';
 export * from './DateResponseInput';

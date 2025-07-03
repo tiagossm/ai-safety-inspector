@@ -1,34 +1,31 @@
 
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export function useChecklistUsers() {
-  const [users, setUsers] = useState<any[]>([]);
-  const [loadingUsers, setLoadingUsers] = useState(false);
-
-  useEffect(() => {
-    const fetchUsers = async () => {
-      setLoadingUsers(true);
-      try {
-        const { data, error } = await supabase
-          .from('users')
-          .select('id, name, email')
-          .order('name');
-        
-        if (error) throw error;
-        setUsers(data || []);
-      } catch (error) {
-        console.error('Error fetching users:', error);
-      } finally {
-        setLoadingUsers(false);
+  const { data: users = [], isLoading } = useQuery({
+    queryKey: ["checklist-users"],
+    queryFn: async () => {
+      console.log("Buscando usuários para checklist...");
+      
+      const { data, error } = await supabase
+        .from("users")
+        .select("id, name, email")
+        .eq("status", "active")
+        .order("name");
+      
+      if (error) {
+        console.error("Erro ao buscar usuários:", error);
+        return [];
       }
-    };
-    
-    fetchUsers();
-  }, []);
+      
+      console.log("Usuários encontrados:", data);
+      return data || [];
+    }
+  });
 
   return {
     users,
-    loadingUsers
+    isLoading
   };
 }

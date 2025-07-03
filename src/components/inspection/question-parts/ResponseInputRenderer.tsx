@@ -1,26 +1,14 @@
 
-import React, { useCallback, useState } from "react";
-import { StandardActionButtons, StandardActionButtonsProps } from "./StandardActionButtons";
-import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
-import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
-import { EnhancedMultipleChoiceInput } from "./response-types/EnhancedMultipleChoiceInput";
+import React, { useCallback } from "react";
 import { YesNoResponseInput } from "./response-types/YesNoResponseInput";
 import { TextResponseInput } from "./response-types/TextResponseInput";
-import { ParagraphResponseInput } from "./response-types/ParagraphResponseInput";
-import { CheckboxesResponseInput } from "./response-types/CheckboxesResponseInput";
-import { DropdownResponseInput } from "./response-types/DropdownResponseInput";
-import { DateTimeResponseInput } from "./response-types/DateTimeResponseInput";
-import { DateInput } from "@/components/inspection/question-inputs/DateInput";
-import { TimeInput } from "@/components/inspection/question-inputs/TimeInput";
-import { NumberResponseInput } from "./response-types/NumberResponseInput";
+import { DateResponseInput } from "./response-types/DateResponseInput";
+import { TimeResponseInput } from "./response-types/TimeResponseInput";
+import { NumberInput } from "@/components/inspection/question-inputs/NumberInput";
+import { MultipleChoiceInput } from "@/components/inspection/question-inputs/MultipleChoiceInput";
 import { PhotoInput } from "@/components/inspection/question-inputs/PhotoInput";
 import { SignatureInput } from "@/components/checklist/SignatureInput";
-import { SimpleTextInput } from "./response-types/SimpleTextInput";
-import { MultipleChoiceResponseInput } from "./response-types/MultipleChoiceResponseInput";
-import { MultipleSelectResponseInput } from "./response-types/MultipleSelectResponseInput";
-import { convertToFrontendType } from "@/types/responseTypes";
-import { MediaAnalysisResult, Plan5W2H } from "@/hooks/useMediaAnalysis";
-import { ActionPlan5W2HDialog } from "@/components/action-plans/ActionPlan5W2HDialog";
+import { databaseToFrontendResponseType } from "@/utils/responseTypeMap";
 
 interface ResponseInputRendererProps {
   question: any;
@@ -43,444 +31,215 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   onSaveActionPlan,
   readOnly = false
 }) => {
-  // Obter o tipo de resposta - priorizar campo tipo_resposta do banco
-  const rawResponseType = question.tipo_resposta || question.responseType || "text";
+  // Normalizar o tipo de resposta
+  const dbResponseType = question.responseType || question.tipo_resposta || "sim/não";
+  const responseType = databaseToFrontendResponseType(dbResponseType);
   
-  // Mapeamento direto dos tipos do banco para garantir renderização correta
-  const getResponseTypeComponent = (tipo: string) => {
-    // Normalizar para lowercase para comparação
-    const normalizedType = tipo.toLowerCase().trim();
-    
-    console.log(`[ResponseInputRenderer] Tipo original: "${tipo}" | Normalizado: "${normalizedType}"`);
-    
-    switch (normalizedType) {
-      case 'paragraph':
-      case 'paragrafo':
-        return 'paragraph';
-      case 'text':
-      case 'texto':
-        return 'text';
-      case 'numeric':
-      case 'number':
-      case 'numerico':
-        return 'numeric';
-      case 'yes_no':
-      case 'sim_nao':
-      case 'boolean':
-        return 'yes_no';
-      case 'dropdown':
-      case 'select':
-      case 'lista':
-        return 'dropdown';
-      case 'multiple_choice':
-      case 'multipla_escolha':
-      case 'radio':
-        return 'multiple_choice';
-      case 'multiple_select':
-      case 'checkboxes':
-      case 'caixas_selecao':
-        return 'multiple_select';
-      case 'date':
-      case 'data':
-        return 'date';
-      case 'time':
-      case 'hora':
-        return 'time';
-      case 'datetime':
-      case 'data_hora':
-        return 'datetime';
-      case 'photo':
-      case 'foto':
-        return 'photo';
-      case 'signature':
-      case 'assinatura':
-        return 'signature';
-      default:
-        console.warn(`[ResponseInputRenderer] Tipo não reconhecido: ${tipo}, usando fallback 'text'`);
-        return 'text';
-    }
-  };
+  console.log("ResponseInputRenderer: rendering with responseType:", responseType);
+  console.log("ResponseInputRenderer: current response:", response);
 
-  const responseType = getResponseTypeComponent(rawResponseType);
+  // Ensure response is always an object (even if empty)
+  const safeResponse = response || {};
+  
+  // Make sure mediaUrls is always an array
+  const mediaUrls = safeResponse.mediaUrls || [];
 
-  // Garantir estrutura consistente do response
-  const safeResponse = {
-    value: response?.value,
-    mediaUrls: Array.isArray(response?.mediaUrls) ? response.mediaUrls : [],
-    mediaAnalysisResults: response?.mediaAnalysisResults || {},
-    ...response
-  };
-
-  const mediaUrls = safeResponse.mediaUrls;
-  const mediaAnalysisResults = safeResponse.mediaAnalysisResults;
-
-  // Estados centralizados para modais (apenas se não for readOnly)
-  const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
-  const [isActionPlanDialogOpen, setIsActionPlanDialogOpen] = useState(false);
-  const [ia5W2Hplan, setIa5W2Hplan] = useState<Plan5W2H | null>(null);
-
-  // Handlers (apenas se não for readOnly)
-  const handleOpenAnalysisConsolidated = useCallback(() => {
-    if (!readOnly) setIsAnalysisOpen(true);
-  }, [readOnly]);
-
-  const handleAdd5W2HActionPlan = useCallback((plan: Plan5W2H) => {
-    if (!readOnly) {
-      setIa5W2Hplan(plan);
-      setIsActionPlanDialogOpen(true);
-    }
-  }, [readOnly]);
-
-  const handleOpenActionPlan = useCallback(() => {
-    if (!readOnly) setIsActionPlanDialogOpen(true);
-  }, [readOnly]);
-
-  // Handler de mídia centralizado
   const handleMediaChange = useCallback((urls: string[]) => {
-    if (!readOnly) {
-      const updatedResponse = { ...safeResponse, mediaUrls: urls };
-      onResponseChange(updatedResponse);
-      if (onMediaChange) onMediaChange(urls);
-    }
-  }, [safeResponse, onResponseChange, onMediaChange, readOnly]);
-
-  const getPrimaryMediaType = () => {
-    if (!mediaUrls || mediaUrls.length === 0) return undefined;
-    const url = mediaUrls[0];
-    if (!url) return undefined;
-    const ext = url.split('.').pop()?.toLowerCase() || "";
-    if (ext === "webm") {
-      if (url.toLowerCase().includes('/audio/') || url.toLowerCase().endsWith('audio.webm')) {
-        return "audio";
-      }
-      return "video";
-    }
-    if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) return "audio";
-    if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'].includes(ext)) return "image";
-    if (ext === "pdf") return "pdf";
-    return undefined;
-  };
-
-  const handleAnalysisComplete = useCallback((url: string, result: MediaAnalysisResult) => {
-    if (readOnly) return;
+    console.log("ResponseInputRenderer: Media changed:", urls);
     
-    console.log(`[ResponseInputRenderer] Análise completa para ${url}`, result);
-
-    const cleanResult: MediaAnalysisResult = JSON.parse(JSON.stringify(result));
-
-    const updatedResults = {
-      ...mediaAnalysisResults,
-      [url]: cleanResult
+    const updatedResponse = {
+      ...safeResponse,
+      mediaUrls: urls
     };
+    
+    console.log("ResponseInputRenderer: Updating response with media URLs:", updatedResponse);
+    onResponseChange(updatedResponse);
+    
+    if (onMediaChange) {
+      onMediaChange(urls);
+    }
+  }, [safeResponse, onResponseChange, onMediaChange]);
+
+  const handleResponseWithAnalysis = useCallback((updatedData: any) => {
+    console.log("ResponseInputRenderer: Handling response with analysis:", updatedData);
 
     const updatedResponse = {
       ...safeResponse,
-      mediaAnalysisResults: updatedResults
+      ...updatedData,
     };
 
-    delete updatedResponse.subChecklistResponses;
-    if (updatedResponse.mediaAnalysisResults) {
-      Object.values(updatedResponse.mediaAnalysisResults).forEach((val: any) => {
-        if (val && typeof val === "object" && typeof val.subChecklistResponses !== "undefined") {
-          delete val.subChecklistResponses;
-        }
-      });
-    }
-
     onResponseChange(updatedResponse);
-  }, [mediaAnalysisResults, safeResponse, onResponseChange, readOnly]);
+  }, [safeResponse, onResponseChange]);
 
-  // Componentes de modal centralizados (apenas se não for readOnly)
-  const actionPlanDialog = !readOnly ? (
-    <ActionPlan5W2HDialog
-      open={isActionPlanDialogOpen}
-      onOpenChange={setIsActionPlanDialogOpen}
-      questionId={question?.id}
-      inspectionId={inspectionId}
-      existingPlan={actionPlan}
-      onSave={async (data: any) => {
-        await onSaveActionPlan?.(data);
-        setIsActionPlanDialogOpen(false);
-      }}
-      iaSuggestions={mediaAnalysisResults}
-      ia5W2Hplan={ia5W2Hplan}
-    />
-  ) : null;
-
-  const mediaAnalysisDialog = !readOnly ? (
-    <MediaAnalysisDialog
-      open={isAnalysisOpen}
-      onOpenChange={setIsAnalysisOpen}
-      mediaUrl={mediaUrls && mediaUrls.length > 0 ? mediaUrls[0] : null}
-      mediaType={getPrimaryMediaType()}
-      questionText={question.text || question.pergunta || ""}
-      userAnswer={
-        safeResponse?.value === true ? "Sim" : 
-        safeResponse?.value === false ? "Não" : 
-        String(safeResponse?.value || "")
+  const handleSaveActionPlan = useCallback(
+    async (actionPlanData: any) => {
+      console.log("ResponseInputRenderer: Saving action plan:", actionPlanData);
+      if (onSaveActionPlan) {
+        await onSaveActionPlan(actionPlanData);
       }
-      multimodalAnalysis={true}
-      mediaUrls={mediaUrls}
-      onAnalysisComplete={handleAnalysisComplete}
-      onAdd5W2HActionPlan={handleAdd5W2HActionPlan}
-    />
-  ) : null;
+    },
+    [onSaveActionPlan]
+  );
 
-  // Componente de botões padrão (apenas se não for readOnly)
-  const standardActionButtons = !readOnly ? (
-    <StandardActionButtons
-      question={question}
-      readOnly={readOnly}
-      onOpenAnalysis={handleOpenAnalysisConsolidated}
-      onActionPlanClick={handleOpenActionPlan}
-      mediaUrls={mediaUrls}
-      mediaAnalysisResults={mediaAnalysisResults}
-      dummyProp="UniqueKeyForProps20250615"
-    />
-  ) : null;
+  // Função para lidar com mudanças em componentes simples
+  const handleSimpleValueChange = useCallback((value: any) => {
+    onResponseChange({
+      ...safeResponse,
+      value
+    });
+  }, [safeResponse, onResponseChange]);
 
-  // Componente de upload de mídia (apenas se não for readOnly)
-  const mediaUploadInput = !readOnly ? (
-    <MediaUploadInput
-      mediaUrls={mediaUrls}
-      onMediaChange={handleMediaChange}
-      allowsPhoto={question.allowsPhoto || question.permite_foto || false}
-      allowsVideo={question.allowsVideo || question.permite_video || false}
-      allowsAudio={question.allowsAudio || question.permite_audio || false}
-      allowsFiles={question.allowsFiles || question.permite_files || false}
-      readOnly={readOnly}
-      questionText={question.text || question.pergunta || ""}
-    />
-  ) : null;
+  if (responseType === "yes_no") {
+    return (
+      <YesNoResponseInput
+        question={question}
+        response={safeResponse}
+        inspectionId={inspectionId}
+        onResponseChange={onResponseChange}
+        onMediaChange={handleMediaChange}
+        actionPlan={actionPlan}
+        onSaveActionPlan={handleSaveActionPlan}
+        readOnly={readOnly}
+        onApplyAISuggestion={(suggestion: string) =>
+          handleResponseWithAnalysis({ aiSuggestion: suggestion })
+        }
+      />
+    );
+  }
 
-  console.log(`[ResponseInputRenderer] Renderizando tipo: ${responseType} para pergunta:`, question.text || question.pergunta);
+  if (responseType === "text") {
+    return (
+      <TextResponseInput
+        question={question}
+        response={safeResponse}
+        onResponseChange={onResponseChange}
+        onMediaChange={handleMediaChange}
+        onApplyAISuggestion={(suggestion: string) =>
+          handleResponseWithAnalysis({ aiSuggestion: suggestion })
+        }
+        readOnly={readOnly}
+      />
+    );
+  }
 
-  // Switch principal baseado no tipo de resposta mapeado
-  switch (responseType) {
-    case "paragraph":
-      return (
-        <div className="space-y-4">
-          <ParagraphResponseInput
-            value={safeResponse.value}
-            onChange={val => onResponseChange({ ...safeResponse, value: val })}
-            readOnly={readOnly}
-          />
-          {standardActionButtons}
-          {mediaUploadInput}
-          {mediaAnalysisDialog}
-          {actionPlanDialog}
-        </div>
-      );
-
-    case "text":
-      return (
-        <div className="space-y-4">
-          <SimpleTextInput
-            value={safeResponse.value}
-            onChange={val => onResponseChange({ ...safeResponse, value: val })}
-            readOnly={readOnly}
-          />
-          {standardActionButtons}
-          {mediaUploadInput}
-          {mediaAnalysisDialog}
-          {actionPlanDialog}
-        </div>
-      );
-
-    case "numeric":
-      return (
-        <div className="space-y-4">
-          <NumberResponseInput
-            question={question}
-            value={safeResponse.value}
-            response={safeResponse}
-            onChange={val => onResponseChange({ ...safeResponse, value: val })}
-            readOnly={readOnly}
-          />
-          {standardActionButtons}
-          {mediaUploadInput}
-          {mediaAnalysisDialog}
-          {actionPlanDialog}
-        </div>
-      );
-
-    case "yes_no":
-      return (
-        <div className="space-y-4">
-          <YesNoResponseInput
-            question={question}
-            response={safeResponse}
-            onResponseChange={onResponseChange}
-            readOnly={readOnly}
-          />
-          {standardActionButtons}
-          {mediaUploadInput}
-          {mediaAnalysisDialog}
-          {actionPlanDialog}
-        </div>
-      );
-
-    case "dropdown":
-      return (
-        <div className="space-y-4">
-          <DropdownResponseInput
-            question={question}
-            value={safeResponse.value}
-            onChange={val => onResponseChange({ ...safeResponse, value: val })}
-            readOnly={readOnly}
-          />
-          {standardActionButtons}
-          {mediaUploadInput}
-          {mediaAnalysisDialog}
-          {actionPlanDialog}
-        </div>
-      );
-
-    case "multiple_choice":
-      return (
-        <div className="space-y-4">
-          <MultipleChoiceResponseInput
-            question={question}
-            value={safeResponse.value}
-            onChange={val => onResponseChange({ ...safeResponse, value: val })}
-            readOnly={readOnly}
-            allowMultiple={false}
-          />
-          {standardActionButtons}
-          {mediaUploadInput}
-          {mediaAnalysisDialog}
-          {actionPlanDialog}
-        </div>
-      );
-
-    case "multiple_select":
-      return (
-        <div className="space-y-4">
-          <MultipleSelectResponseInput
-            question={question}
-            value={safeResponse.value}
-            onChange={val => onResponseChange({ ...safeResponse, value: val })}
-            readOnly={readOnly}
-          />
-          {standardActionButtons}
-          {mediaUploadInput}
-          {mediaAnalysisDialog}
-          {actionPlanDialog}
-        </div>
-      );
-
-    case "date":
-      return (
-        <div className="space-y-4">
-          <DateInput
-            value={safeResponse.value}
-            onChange={val => onResponseChange({ ...safeResponse, value: val })}
-            readOnly={readOnly}
-          />
-          {!readOnly && (
-            <StandardActionButtons
-              question={question}
-              readOnly={readOnly}
-              onActionPlanClick={handleOpenActionPlan}
-              dummyProp="UniqueKeyForProps20250615"
-            />
-          )}
-          {actionPlanDialog}
-        </div>
-      );
-
-    case "time":
-      return (
-        <div className="space-y-4">
-          <TimeInput
-            value={safeResponse.value}
-            onChange={val => onResponseChange({ ...safeResponse, value: val })}
-            readOnly={readOnly}
-          />
-          {!readOnly && (
-            <StandardActionButtons
-              question={question}
-              readOnly={readOnly}
-              onActionPlanClick={handleOpenActionPlan}
-              dummyProp="UniqueKeyForProps20250615"
-            />
-          )}
-          {actionPlanDialog}
-        </div>
-      );
-
-    case "datetime":
-      return (
-        <div className="space-y-4">
-          <DateTimeResponseInput
-            value={safeResponse.value}
-            onChange={val => onResponseChange({ ...safeResponse, value: val })}
-            readOnly={readOnly}
-          />
-          {!readOnly && (
-            <StandardActionButtons
-              question={question}
-              readOnly={readOnly}
-              onActionPlanClick={handleOpenActionPlan}
-              dummyProp="UniqueKeyForProps20250615"
-            />
-          )}
-          {actionPlanDialog}
-        </div>
-      );
-
-    case "photo":
-      return (
-        <div className="space-y-4">
+  if (responseType === "multiple_choice") {
+    return (
+      <div className="space-y-2">
+        <MultipleChoiceInput 
+          options={question.options || []}
+          value={safeResponse.value}
+          onChange={handleSimpleValueChange}
+        />
+        {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
           <PhotoInput
             mediaUrls={mediaUrls}
-            onAddMedia={() => {}}
-            onDeleteMedia={url => handleMediaChange(mediaUrls.filter((mediaUrl: any) => mediaUrl !== url))}
-            allowsPhoto={true}
+            onAddMedia={() => console.log("Adicionar mídia para questão multiple_choice")}
+            onDeleteMedia={(url) => {
+              const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
+              handleMediaChange(updatedUrls);
+            }}
+            allowsPhoto={question.allowsPhoto}
             allowsVideo={question.allowsVideo}
             allowsAudio={question.allowsAudio}
             allowsFiles={question.allowsFiles}
           />
-          {standardActionButtons}
-          {mediaUploadInput}
-          {mediaAnalysisDialog}
-          {actionPlanDialog}
-        </div>
-      );
-
-    case "signature":
-      return (
-        <div className="space-y-4">
-          <SignatureInput
-            value={safeResponse.value || ""}
-            onChange={val => onResponseChange({ ...safeResponse, value: val })}
-          />
-          {!readOnly && (
-            <StandardActionButtons
-              question={question}
-              readOnly={readOnly}
-              onActionPlanClick={handleOpenActionPlan}
-              dummyProp="UniqueKeyForProps20250615"
-            />
-          )}
-          {actionPlanDialog}
-        </div>
-      );
-
-    default:
-      console.error(`[ResponseInputRenderer] Tipo de resposta não suportado: ${responseType}`);
-      return (
-        <div className="p-4 border border-red-300 bg-red-50 rounded-md">
-          <p className="text-red-700">
-            Tipo de resposta não suportado: {responseType}
-          </p>
-          <p className="text-xs text-gray-600 mt-1">
-            Tipo original: {rawResponseType}
-          </p>
-          <p className="text-xs text-gray-600">
-            Tipos suportados: paragraph, text, numeric, yes_no, dropdown, multiple_choice, multiple_select, date, time, datetime, photo, signature
-          </p>
-        </div>
-      );
+        )}
+      </div>
+    );
   }
+
+  if (responseType === "numeric") {
+    return (
+      <div className="space-y-2">
+        <NumberInput
+          value={safeResponse.value}
+          onChange={handleSimpleValueChange}
+        />
+        {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
+          <PhotoInput
+            mediaUrls={mediaUrls}
+            onAddMedia={() => console.log("Adicionar mídia para questão numeric")}
+            onDeleteMedia={(url) => {
+              const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
+              handleMediaChange(updatedUrls);
+            }}
+            allowsPhoto={question.allowsPhoto}
+            allowsVideo={question.allowsVideo}
+            allowsAudio={question.allowsAudio}
+            allowsFiles={question.allowsFiles}
+          />
+        )}
+      </div>
+    );
+  }
+
+  if (responseType === "photo") {
+    return (
+      <PhotoInput
+        mediaUrls={mediaUrls}
+        onAddMedia={() => console.log("Adicionar mídia para questão photo")}
+        onDeleteMedia={(url) => {
+          const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
+          handleMediaChange(updatedUrls);
+        }}
+        allowsPhoto={true}
+        allowsVideo={question.allowsVideo}
+        allowsAudio={question.allowsAudio}
+        allowsFiles={question.allowsFiles}
+      />
+    );
+  }
+
+  if (responseType === "signature") {
+    return (
+      <div className="space-y-2">
+        <SignatureInput 
+          value={safeResponse.value || ""}
+          onChange={handleSimpleValueChange}
+        />
+        {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
+          <PhotoInput
+            mediaUrls={mediaUrls}
+            onAddMedia={() => console.log("Adicionar mídia para questão signature")}
+            onDeleteMedia={(url) => {
+              const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
+              handleMediaChange(updatedUrls);
+            }}
+            allowsPhoto={question.allowsPhoto}
+            allowsVideo={question.allowsVideo}
+            allowsAudio={question.allowsAudio}
+            allowsFiles={question.allowsFiles}
+          />
+        )}
+      </div>
+    );
+  }
+
+  if (responseType === "date") {
+    return (
+      <DateResponseInput
+        value={safeResponse.value}
+        onChange={(value) => handleSimpleValueChange(value)}
+        readOnly={readOnly}
+      />
+    );
+  }
+
+  if (responseType === "time") {
+    return (
+      <TimeResponseInput
+        value={safeResponse.value}
+        onChange={(value) => handleSimpleValueChange(value)}
+        readOnly={readOnly}
+      />
+    );
+  }
+
+  return (
+    <div className="p-4 border border-red-300 bg-red-50 rounded-md">
+      <p className="text-red-700">
+        Tipo de resposta não suportado: {responseType} (original: {dbResponseType})
+      </p>
+    </div>
+  );
 };

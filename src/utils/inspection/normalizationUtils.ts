@@ -1,76 +1,109 @@
+
 /**
- * Normaliza o tipo de resposta para os permitidos pelo banco
- * Aceitos: 'sim/não', 'numérico', 'texto', 'foto', 'assinatura', 'seleção múltipla',
- *          'yes_no', 'numeric', 'text', 'photo', 'signature', 'multiple_choice',
- *          'date', 'time'
+ * Normalizes various input response types to a consistent set of values
+ * This helps handle different response type formats across the application
  */
-const DB_RESPONSE_TYPES = [
-  "sim/não", "numérico", "texto", "foto", "assinatura", "seleção múltipla",
-  "yes_no", "numeric", "text", "photo", "signature", "multiple_choice",
-  "date", "time"
-];
-
-export const normalizeResponseType = (
-  responseType: string
-): "yes_no" | "multiple_choice" | "numeric" | "photo" | "signature" | "date" | "time" | "text" => {
+export const normalizeResponseType = (responseType: string): "text" | "yes_no" | "multiple_choice" | "numeric" | "photo" | "signature" | "date" | "time" => {
   if (!responseType) return "text";
-  const type = responseType.toLowerCase().trim();
-
-  if (
-    type === "sim/não" || type === "sim/nao" || type === "yes_no" ||
-    type === "boolean" || type === "yes/no" || type === "yes" || type === "no"
-  ) return "yes_no";
+  
+  const type = responseType.toLowerCase();
   
   if (
-    type === "seleção múltipla" || type === "selecao multipla" ||
-    type === "multiple_choice" || type === "múltipla escolha" ||
-    type === "multipla escolha" || type === "choice" || type === "checkbox" ||
-    type === "checkboxes"
-  ) return "multiple_choice";
+    type.includes("sim") || 
+    type.includes("não") || 
+    type.includes("nao") || 
+    type.includes("yes") || 
+    type.includes("no") ||
+    type === "boolean"
+  ) {
+    return "yes_no";
+  }
   
   if (
-    type === "numérico" || type === "numerico" || type === "numeric" ||
-    type === "number" || type === "int" || type === "integer" ||
-    type === "float" || type === "decimal"
-  ) return "numeric";
+    type.includes("múltipla") || 
+    type.includes("multipla") || 
+    type.includes("multiple") || 
+    type.includes("choice") ||
+    type.includes("select") ||
+    type.includes("opcoes") ||
+    type.includes("opcões") ||
+    type.includes("options")
+  ) {
+    return "multiple_choice";
+  }
   
   if (
-    type === "foto" || type === "photo" || type === "image" || type === "imagem"
-  ) return "photo";
+    type.includes("número") || 
+    type.includes("numero") || 
+    type.includes("numeric") ||
+    type.includes("number") ||
+    type === "int" ||
+    type === "integer" ||
+    type === "float" ||
+    type === "decimal"
+  ) {
+    return "numeric";
+  }
   
   if (
-    type === "assinatura" || type === "signature" || type === "sign"
-  ) return "signature";
+    type.includes("foto") || 
+    type.includes("photo") || 
+    type.includes("imagem") || 
+    type.includes("image")
+  ) {
+    return "photo";
+  }
   
-  if (type === "date" || type === "data") return "date";
-  if (type === "time" || type === "hora" || type === "horario" || type === "horário") return "time";
-  if (type === "texto" || type === "text" || type === "string" || type === "paragraph" || type === "parágrafo") return "text";
-
-  // fallback se o dev colocar exatamente o permitido
-  if (DB_RESPONSE_TYPES.includes(type)) return type as any;
-
-  // DEFAULT
-  return "text";
+  if (
+    type.includes("assinatura") || 
+    type.includes("signature") ||
+    type.includes("sign")
+  ) {
+    return "signature";
+  }
+  
+  if (
+    type.includes("data") ||
+    type.includes("date") ||
+    type.includes("calendario") ||
+    type.includes("calendar")
+  ) {
+    return "date";
+  }
+  
+  if (
+    type.includes("hora") ||
+    type.includes("time") ||
+    type.includes("horário") ||
+    type.includes("horario") ||
+    type.includes("relógio") ||
+    type.includes("relogio")
+  ) {
+    return "time";
+  }
+  
+  return "text"; // Default to text if no match is found
 };
 
 /**
- * Determina se uma resposta é negativa (usado para planos de ação)
+ * Determines if a response value is a "negative" response
+ * This is used for showing action plans on negative responses
  */
 export const isNegativeResponse = (value: any): boolean => {
   if (value === undefined || value === null) return false;
+  
   if (typeof value === "boolean") return value === false;
+  
   if (typeof value === "string") {
     const normalizedValue = value.toLowerCase().trim();
-    return (
-      normalizedValue === "false" ||
-      normalizedValue === "não" ||
-      normalizedValue === "nao" ||
-      normalizedValue === "no" ||
-      normalizedValue === "0"
-    );
+    return normalizedValue === "false" ||
+           normalizedValue === "não" ||
+           normalizedValue === "nao" ||
+           normalizedValue === "no" ||
+           normalizedValue === "0";
   }
+  
   if (typeof value === "number") return value === 0;
+  
   return false;
 };
-
-export const normalizeAIResponseType = normalizeResponseType;

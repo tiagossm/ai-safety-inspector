@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -22,7 +21,7 @@ export default function NewChecklistDetails() {
   const { toast } = useToast();
 
   const {
-    data: checklist,
+    checklist,
     isLoading,
     error,
     refetch

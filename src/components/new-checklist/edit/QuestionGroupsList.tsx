@@ -6,30 +6,24 @@ import { QuestionGroup } from "@/components/new-checklist/question-editor/Questi
 
 interface QuestionGroupsListProps {
   groups: ChecklistGroup[];
-  questions: ChecklistQuestion[];
   questionsByGroup: Map<string, ChecklistQuestion[]>;
   onUpdateGroup: (group: ChecklistGroup) => void;
   onAddQuestion: (groupId: string) => void;
   onUpdateQuestion: (question: ChecklistQuestion) => void;
   onDeleteQuestion: (questionId: string) => void;
   onDeleteGroup: (groupId: string) => void;
-  onAddSubQuestion: (parentId: string) => void;
   enableAllMedia?: boolean;
-  isSubmitting?: boolean;
 }
 
 export function QuestionGroupsList({
   groups,
-  questions,
   questionsByGroup,
   onUpdateGroup,
   onAddQuestion,
   onUpdateQuestion,
   onDeleteQuestion,
   onDeleteGroup,
-  onAddSubQuestion,
-  enableAllMedia = false,
-  isSubmitting = false
+  enableAllMedia = false
 }: QuestionGroupsListProps) {
   return (
     <>
@@ -64,16 +58,13 @@ export function QuestionGroupsList({
                       <QuestionGroup
                         group={group}
                         questions={groupQuestions}
-                        groupIndex={index}
                         onUpdateGroup={onUpdateGroup}
                         onAddQuestion={onAddQuestion}
                         onUpdateQuestion={onUpdateQuestion}
                         onDeleteQuestion={onDeleteQuestion}
                         onDeleteGroup={onDeleteGroup}
-                        onAddSubQuestion={onAddSubQuestion}
                         dragHandleProps={draggableProvided.dragHandleProps}
                         enableAllMedia={enableAllMedia}
-                        isSubmitting={isSubmitting}
                       />
                       {droppableProvided.placeholder}
                     </div>

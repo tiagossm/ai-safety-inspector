@@ -1,339 +1,385 @@
-
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { corsHeaders, handleCors, errorResponse, addCorsHeaders } from "../_shared/corsUtils.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+  // IMPORTANTE: Sempre responder a solicitações OPTIONS com cabeçalhos CORS
+  const corsResponse = handleCors(req);
+  if (corsResponse) {
+    return corsResponse;
   }
-
+  
   try {
     console.log("--- Iniciando solicitação generate-checklist-v2 ---");
     
-    const body = await req.json();
+    // Verificar se a chave OpenAI está configurada
+    if (!OPENAI_API_KEY) {
+      console.error("OPENAI_API_KEY não está configurada");
+      return errorResponse("API key da OpenAI não configurada no servidor", 500);
+    }
+    
+    const body = await req.json().catch(err => {
+      console.error("Erro ao analisar corpo da requisição:", err);
+      return null;
+    });
+    
+    if (!body) {
+      return errorResponse("Corpo da requisição inválido ou vazio");
+    }
+    
     console.log("Corpo da requisição:", JSON.stringify(body));
     
-    const { title, description, category, companyId, questionCount = 5, prompt, assistantId } = body;
+    // Extrair os parâmetros da solicitação
+    const { 
+      title, 
+      description, 
+      category, 
+      companyId,
+      questionCount = 10,
+      prompt,
+      assistantId 
+    } = body;
 
+    // Verificações de parâmetros
+    if (!prompt && !description) {
+      console.error("Descrição ou prompt são necessários");
+      return errorResponse("Descrição ou prompt são necessários");
+    }
+    
     if (!category) {
-      throw new Error('Categoria é obrigatória');
+      console.error("Categoria é obrigatória");
+      return errorResponse("Categoria é obrigatória");
+    }
+    
+    if (!companyId) {
+      console.error("ID da empresa é obrigatório");
+      return errorResponse("ID da empresa é obrigatório");
     }
 
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) {
-      throw new Error('OPENAI_API_KEY não configurada');
-    }
+    console.log("Verificando ID do Assistente OpenAI:", assistantId);
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    let companyInfo = "";
-    if (companyId) {
-      const { data: company } = await supabase
-        .from('companies')
-        .select('fantasy_name, cnpj, cnae, employee_count')
-        .eq('id', companyId)
-        .single();
-      
-      if (company) {
-        const { data: riskData } = await supabase
-          .from('nr4_riscos')
-          .select('grau_risco')
-          .eq('cnae', company.cnae)
-          .single();
-        
-        companyInfo = `Empresa: ${company.fantasy_name} (CNPJ ${company.cnpj}, CNAE ${company.cnae}, Grau de Risco ${riskData?.grau_risco || 'não informado'}, Funcionários: ${company.employee_count || 'não informado'})`;
-      }
-    }
-
-    const finalPrompt = prompt || `Categoria: ${category}\n${companyInfo}\nDescrição: ${description}\nContexto: ${body.context || ''}`;
-
-    let result;
-
-    if (assistantId) {
-      console.log("Verificando ID do Assistente OpenAI:", assistantId);
-      result = await generateWithAssistant(openaiApiKey, assistantId, category, questionCount, finalPrompt);
-    } else {
-      console.log("Fazendo requisição para OpenAI com parâmetros:", JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: `Você é um assistente especializado em criar checklists de segurança do trabalho.
-        Seu objetivo é criar um checklist para a categoria: ${category}.
-        O checklist deve ter aproximadamente ${questionCount} perguntas.
-        Para cada pergunta, você deve incluir:
-        1. O texto da pergunta
-        2. O tipo de resposta (sim/não, múltipla escolha, numérico, texto)
-        3. Se a pergunta é obrigatória
-        4. Se permite anexar foto ou vídeo`
-          },
-          {
-            role: "user",
-            content: finalPrompt
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 2500,
-        response_format: { type: "json_object" }
-      }));
-
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openaiApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "system",
-              content: `Você é um assistente especializado em criar checklists de segurança do trabalho.
-        Seu objetivo é criar um checklist para a categoria: ${category}.
-        O checklist deve ter aproximadamente ${questionCount} perguntas.
-        Para cada pergunta, você deve incluir:
-        1. O texto da pergunta
-        2. O tipo de resposta (sim/não, múltipla escolha, numérico, texto)
-        3. Se a pergunta é obrigatória
-        4. Se permite anexar foto ou vídeo`
-            },
-            {
-              role: "user",
-              content: finalPrompt
-            }
-          ],
-          temperature: 0.7,
-          max_tokens: 2500,
-          response_format: { type: "json_object" }
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      result = data.choices[0].message.content;
-    }
-
-    console.log("Processing AI response:", result.substring(0, 200) + "...");
-
-    const aiResponse = JSON.parse(result);
-    console.log("Received assistant response:", JSON.stringify(aiResponse).substring(0, 200) + "...");
-
-    // Mapeamento padronizado de tipos de resposta
-    function normalizeResponseType(rawType: string): string {
-      const normalizedType = rawType.toLowerCase().trim();
-      
-      const typeMapping: Record<string, string> = {
-        'yes_no': 'yes_no',
-        'sim/não': 'yes_no',
-        'sim/nao': 'yes_no',
-        'boolean': 'yes_no',
-        'bool': 'yes_no',
-        
-        'text': 'text',
-        'texto': 'text',
-        'string': 'text',
-        
-        'paragraph': 'paragraph',
-        'parágrafo': 'paragraph',
-        'paragrafo': 'paragraph',
-        'texto longo': 'paragraph',
-        
-        'numeric': 'numeric',
-        'numérico': 'numeric',
-        'numero': 'numeric',
-        'number': 'numeric',
-        
-        'multiple_choice': 'multiple_choice',
-        'seleção múltipla': 'multiple_choice',
-        'selecao multipla': 'multiple_choice',
-        'múltipla escolha': 'multiple_choice',
-        'multipla escolha': 'multiple_choice',
-        'choice': 'multiple_choice',
-        
-        'checkboxes': 'checkboxes',
-        'caixas de seleção': 'checkboxes',
-        'caixas de selecao': 'checkboxes',
-        'checkbox': 'checkboxes',
-        
-        'dropdown': 'dropdown',
-        'lista suspensa': 'dropdown',
-        'select': 'dropdown',
-        
-        'photo': 'photo',
-        'foto': 'photo',
-        'image': 'photo',
-        'imagem': 'photo',
-        
-        'signature': 'signature',
-        'assinatura': 'signature',
-        'sign': 'signature',
-        
-        'date': 'date',
-        'data': 'date',
-        
-        'time': 'time',
-        'hora': 'time',
-        'horario': 'time',
-        'horário': 'time',
-        
-        'datetime': 'datetime',
-        'data e hora': 'datetime',
-        'data_hora': 'datetime'
-      };
-      
-      return typeMapping[normalizedType] || 'text';
-    }
-
-    // Processar perguntas com mapeamento correto
-    const processedQuestions = (aiResponse.questions || []).map((q: any, index: number) => {
-      const rawResponseType = q.responseType || q.tipo_resposta || 'yes_no';
-      const normalizedResponseType = normalizeResponseType(rawResponseType);
-      
-      return {
-        id: `ai-${Date.now()}-${index}`,
-        text: q.text || q.pergunta || `Pergunta ${index + 1}`,
-        responseType: normalizedResponseType,
-        isRequired: q.isRequired !== false,
-        weight: q.weight || 1,
-        allowsPhoto: q.allowsPhoto || false,
-        allowsVideo: q.allowsVideo || false,
-        allowsAudio: q.allowsAudio || false,
-        allowsFiles: q.allowsFiles || false,
-        order: index,
-        options: q.options || null,
-        groupId: "group-1"
-      };
-    });
-
-    // Processar grupos
-    const processedGroups = aiResponse.groups || [
+    // Parâmetros para a chamada da OpenAI
+    const messages = [
       {
-        id: "group-1",
-        title: "Geral",
-        order: 0
+        role: "system",
+        content: `Você é um assistente especializado em criar checklists de segurança do trabalho.
+        Seu objetivo é criar um checklist para a categoria: ${category}.
+        O checklist deve ter aproximadamente ${questionCount} perguntas.
+        Para cada pergunta, você deve incluir:
+        1. O texto da pergunta
+        2. O tipo de resposta (sim/não, múltipla escolha, numérico, texto)
+        3. Se a pergunta é obrigatória
+        4. Se permite anexar foto ou vídeo`
+      },
+      {
+        role: "user",
+        content: prompt || `Crie um checklist para ${category} com a seguinte descrição: ${description}`
       }
     ];
 
-    console.log(`Processed ${processedQuestions.length} questions and ${processedGroups.length} groups`);
-    console.log("Response types:", processedQuestions.map(q => `${q.text}: ${q.responseType}`));
-    console.log("Resposta processada com sucesso");
+    // Parâmetros do modelo OpenAI
+    const openaiParams = {
+      model: assistantId ? "gpt-4o-mini" : "gpt-3.5-turbo-0125",
+      messages,
+      temperature: 0.7,
+      max_tokens: 2500,
+      response_format: { type: "json_object" }
+    };
 
-    return new Response(
+    console.log("Fazendo requisição para OpenAI com parâmetros:", JSON.stringify(openaiParams));
+    
+    let response;
+    
+    if (assistantId && assistantId !== "default") {
+      console.log("Usando abordagem baseada em threads com ID do Assistente:", assistantId);
+      response = await generateWithAssistant(assistantId, prompt || description, category, questionCount);
+    } else {
+      console.log("Usando API de completion padrão");
+      // Chamada padrão da API
+      try {
+        const openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${OPENAI_API_KEY}`,
+          },
+          body: JSON.stringify(openaiParams),
+        });
+        
+        const apiResponse = await openaiResponse.json();
+        console.log("Status da resposta da API:", openaiResponse.status);
+        
+        if (!openaiResponse.ok) {
+          console.error("Erro na API OpenAI:", apiResponse);
+          return errorResponse("Erro ao comunicar com OpenAI", openaiResponse.status);
+        }
+        
+        response = JSON.parse(apiResponse.choices[0].message.content);
+      } catch (openaiError) {
+        console.error("Exceção na chamada OpenAI:", openaiError);
+        return errorResponse(`Erro ao processar resposta da OpenAI: ${openaiError.message}`, 500);
+      }
+    }
+    
+    // Processa a resposta para estruturar os dados
+    const processedResponse = processResponse(response, title, description, category, companyId);
+    
+    console.log("Resposta processada com sucesso");
+    return addCorsHeaders(new Response(
       JSON.stringify({
         success: true,
-        questions: processedQuestions,
-        groups: processedGroups,
-        checklistData: {
-          title: aiResponse.title || title || `Checklist - ${category}`,
-          description: aiResponse.description || description || `Checklist gerado para ${category}`,
-          is_template: aiResponse.is_template || false
+        ...processedResponse
+      }),
+      { 
+        headers: {
+          "Content-Type": "application/json"
         }
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
-    );
-
+    ));
+    
   } catch (error) {
-    console.error('Error in generate-checklist-v2:', error);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message || 'Erro interno do servidor'
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+    console.error("Erro geral em generate-checklist-v2:", error);
+    return errorResponse(error.message || "Erro desconhecido", 500);
   }
 });
 
-async function generateWithAssistant(apiKey: string, assistantId: string, category: string, questionCount: number, prompt: string) {
-  console.log("Usando abordagem baseada em threads com ID do Assistente:", assistantId);
-  console.log("Generating with assistant:", assistantId);
+// Função para processar e estruturar a resposta do modelo
+function processResponse(
+  response: any,
+  title: string,
+  description: string,
+  category: string,
+  companyId: string | null
+) {
+  console.log("Processing AI response:", JSON.stringify(response).substring(0, 200) + "...");
+  
+  // Determinamos onde os dados estão na resposta (formatos diferentes podem ser retornados)
+  let checklistData = response.checklist || response;
+  let questions = checklistData.questions || response.questions || [];
+  let groups = checklistData.groups || response.groups || [];
+  
+  // Se não houver grupos, criamos um padrão
+  if (!groups || !Array.isArray(groups) || groups.length === 0) {
+    groups = [{
+      id: `group-${Date.now()}`,
+      title: "Geral",
+      order: 0
+    }];
+  }
+  
+  // Se não houver perguntas no formato esperado, tentamos extrair do texto
+  if (!questions || !Array.isArray(questions) || questions.length === 0) {
+    console.log("No structured questions found, attempting to parse from response");
+    questions = [];
+  }
+  
+  // Garantimos que todas as perguntas tenham groupId
+  if (questions.length > 0 && groups.length > 0) {
+    questions = questions.map((q, index) => {
+      if (!q.groupId) {
+        // Associa a pergunta a um grupo baseado na ordem (distribuição simples)
+        const groupIndex = Math.floor(index / (questions.length / groups.length));
+        return {
+          ...q,
+          groupId: groups[Math.min(groupIndex, groups.length - 1)].id,
+          id: q.id || `question-${Date.now()}-${index}`
+        };
+      }
+      return q;
+    });
+  }
+  
+  // Normalizando dados do checklist
+  const checklistInfo = {
+    title: checklistData.title || title || `Checklist: ${category}`,
+    description: checklistData.description || description || `Checklist gerado por IA para ${category}`,
+    category,
+    company_id: companyId,
+    is_template: false,
+    status: "active"
+  };
+  
+  console.log(`Processed ${questions.length} questions and ${groups.length} groups`);
+  
+  return {
+    checklistData: checklistInfo,
+    questions,
+    groups
+  };
+}
 
-  const thread = await fetch('https://api.openai.com/v1/threads', {
-    method: 'POST',
+// Função para gerar checklist usando Assistants API
+async function generateWithAssistant(
+  assistantId: string, 
+  prompt: string,
+  category: string,
+  questionCount: number
+): Promise<any> {
+  console.log("Generating with assistant:", assistantId);
+  
+  // Criar uma thread
+  const threadResponse = await fetch("https://api.openai.com/v1/threads", {
+    method: "POST",
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      'OpenAI-Beta': 'assistants=v2'
+      "Content-Type": "application/json",
+      "OpenAI-Beta": "assistants=v2",
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
     },
     body: JSON.stringify({})
   });
-
-  const threadData = await thread.json();
-  console.log("Created thread with ID:", threadData.id);
-
-  await fetch(`https://api.openai.com/v1/threads/${threadData.id}/messages`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      'OpenAI-Beta': 'assistants=v2'
-    },
-    body: JSON.stringify({
-      role: 'user',
-      content: prompt
-    })
-  });
-
-  console.log("Added message to thread");
-
-  const run = await fetch(`https://api.openai.com/v1/threads/${threadData.id}/runs`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      'OpenAI-Beta': 'assistants=v2'
-    },
-    body: JSON.stringify({
-      assistant_id: assistantId
-    })
-  });
-
-  const runData = await run.json();
-  console.log("Started run with ID:", runData.id);
-
-  let runStatus = runData.status;
-  while (runStatus === 'queued' || runStatus === 'in_progress') {
-    console.log(`Run status: ${runStatus}, waiting...`);
-    await new Promise(resolve => setTimeout(resolve, 5000));
-    
-    const statusResponse = await fetch(`https://api.openai.com/v1/threads/${threadData.id}/runs/${runData.id}`, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'OpenAI-Beta': 'assistants=v2'
-      }
-    });
-    
-    const statusData = await statusResponse.json();
-    runStatus = statusData.status;
+  
+  if (!threadResponse.ok) {
+    const error = await threadResponse.json();
+    console.error("Error creating thread:", error);
+    throw new Error("Falha ao criar thread para o assistente");
   }
-
-  console.log("Run completed, fetching messages");
-
-  const messages = await fetch(`https://api.openai.com/v1/threads/${threadData.id}/messages`, {
+  
+  const thread = await threadResponse.json();
+  const threadId = thread.id;
+  console.log("Created thread with ID:", threadId);
+  
+  // Adicionar mensagem à thread
+  const messageContent = `Por favor, crie um checklist para a categoria: ${category}. 
+  O checklist deve ter aproximadamente ${questionCount} perguntas.
+  Detalhes adicionais: ${prompt}
+  
+  Responda com um JSON contendo:
+  1. title: título do checklist
+  2. description: descrição do checklist
+  3. questions: array de perguntas, cada uma com:
+     - text: texto da pergunta
+     - responseType: tipo de resposta (yes_no, multiple_choice, text, numeric)
+     - isRequired: se é obrigatória (true/false)
+     - allowsPhoto: se permite foto (true/false)
+     - allowsVideo: se permite vídeo (true/false)
+     - options: array de opções para perguntas de múltipla escolha
+  4. groups: array de grupos, cada um com:
+     - id: identificador único
+     - title: título do grupo
+     - order: ordem do grupo`;
+  
+  const messageResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
+    method: "POST",
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'OpenAI-Beta': 'assistants=v2'
+      "Content-Type": "application/json",
+      "OpenAI-Beta": "assistants=v2",
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      role: "user",
+      content: messageContent
+    })
+  });
+  
+  if (!messageResponse.ok) {
+    const error = await messageResponse.json();
+    console.error("Error adding message to thread:", error);
+    throw new Error("Falha ao adicionar mensagem à thread");
+  }
+  console.log("Added message to thread");
+  
+  // Executar o assistant
+  const runResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "OpenAI-Beta": "assistants=v2",
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      assistant_id: assistantId,
+      model: "gpt-4o-mini"
+    })
+  });
+  
+  if (!runResponse.ok) {
+    const error = await runResponse.json();
+    console.error("Error running assistant:", error);
+    throw new Error("Falha ao executar o assistente");
+  }
+  
+  const run = await runResponse.json();
+  console.log("Started run with ID:", run.id);
+  
+  // Aguardar a conclusão do run
+  let runStatus = await checkRunStatus(threadId, run.id);
+  let attempts = 0;
+  const maxAttempts = 30; // aprox. 60 segundos de espera
+  
+  while (runStatus.status !== "completed" && attempts < maxAttempts) {
+    console.log(`Run status: ${runStatus.status}, waiting...`);
+    await new Promise(resolve => setTimeout(resolve, 2000)); // aguarda 2 segundos
+    runStatus = await checkRunStatus(threadId, run.id);
+    attempts++;
+  }
+  
+  if (attempts >= maxAttempts) {
+    console.error("Timeout waiting for assistant response");
+    throw new Error("Tempo esgotado aguardando resposta do assistente");
+  }
+  
+  console.log("Run completed, fetching messages");
+  
+  // Obter as mensagens da thread
+  const messagesResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
+    method: "GET",
+    headers: {
+      "OpenAI-Beta": "assistants=v2",
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
     }
   });
-
-  const messagesData = await messages.json();
-  const assistantMessage = messagesData.data.find((msg: any) => msg.role === 'assistant');
   
-  return assistantMessage.content[0].text.value;
+  if (!messagesResponse.ok) {
+    const error = await messagesResponse.json();
+    console.error("Error fetching messages:", error);
+    throw new Error("Falha ao recuperar mensagens da thread");
+  }
+  
+  const messages = await messagesResponse.json();
+  
+  // Processar a última mensagem do assistente
+  const assistantMessages = messages.data.filter((msg: any) => msg.role === "assistant");
+  if (assistantMessages.length === 0) {
+    throw new Error("Nenhuma resposta do assistente encontrada");
+  }
+  
+  const lastMessage = assistantMessages[0];
+  console.log("Received assistant response:", lastMessage.content[0].text.value.substring(0, 200) + "...");
+  
+  // Extrair JSON da resposta
+  let jsonContent;
+  try {
+    const contentText = lastMessage.content[0].text.value;
+    const jsonMatch = contentText.match(/```json\n([\s\S]*?)\n```/) || 
+                     contentText.match(/```([\s\S]*?)```/) ||
+                     [null, contentText];
+    
+    jsonContent = JSON.parse(jsonMatch[1]);
+  } catch (error) {
+    console.error("Error parsing JSON from assistant response:", error);
+    throw new Error("Falha ao processar resposta do assistente");
+  }
+  
+  return jsonContent;
+}
+
+// Função para verificar o status de um run
+async function checkRunStatus(threadId: string, runId: string): Promise<any> {
+  const response = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${runId}`, {
+    method: "GET",
+    headers: {
+      "OpenAI-Beta": "assistants=v2",
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+    }
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    console.error("Error checking run status:", error);
+    throw new Error("Falha ao verificar status da execução");
+  }
+  
+  return await response.json();
 }

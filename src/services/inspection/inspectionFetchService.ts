@@ -53,10 +53,6 @@ const processChecklistItems = (items) => {
       conditionValue: item.condition_value || null,
       hasSubChecklist: item.has_subchecklist === true,
       subChecklistId: item.sub_checklist_id || null,
-      level: item.level || 0,
-      path: item.path || null,
-      displayCondition: item.display_condition || null,
-      isConditional: item.is_conditional || false,
     };
   });
 
@@ -68,54 +64,13 @@ const processResponses = (responsesData) => {
 
   const responses = {};
   responsesData.forEach(response => {
-    let value;
-    let mediaAnalysisResults = {};
-    let originalAnswer = response.answer;
-
-    // Extrai value e mediaAnalysisResults de possíveis objetos aninhados (compatível com antigo e novo)
-    if (originalAnswer && typeof originalAnswer === "object") {
-      // Versão objeto aninhado
-      value = originalAnswer.value !== undefined ? originalAnswer.value : originalAnswer;
-      if (originalAnswer.mediaAnalysisResults) {
-        mediaAnalysisResults = originalAnswer.mediaAnalysisResults;
-      }
-    } else if (typeof originalAnswer === "string") {
-      try {
-        const parsed = JSON.parse(originalAnswer);
-        value = parsed.value !== undefined ? parsed.value : parsed;
-        if (parsed.mediaAnalysisResults) {
-          mediaAnalysisResults = parsed.mediaAnalysisResults;
-        }
-      } catch {
-        value = originalAnswer;
-        mediaAnalysisResults = {};
-      }
-    } else {
-      value = originalAnswer;
-      mediaAnalysisResults = {};
-    }
-
-    // Carregar mediaUrls: preferir da coluna, se existir, do contrário busca no objeto
-    let mediaUrls = [];
-    if (response.media_urls && Array.isArray(response.media_urls)) {
-      mediaUrls = response.media_urls.filter((u) => typeof u === "string");
-    } else if (
-      originalAnswer &&
-      typeof originalAnswer === "object" &&
-      Array.isArray(originalAnswer.mediaUrls)
-    ) {
-      mediaUrls = [...originalAnswer.mediaUrls];
-    }
-
-    responses[response.checklist_item_id] = {
-      value,
-      mediaUrls,
-      mediaAnalysisResults,
-      comment: response.comments || response.notes,
+    responses[response.question_id] = {
+      value: response.answer,
+      comment: response.notes,
       actionPlan: response.action_plan,
+      mediaUrls: response.media_urls || [],
       subChecklistResponses: response.sub_checklist_responses || {},
-      updatedAt: response.updated_at,
-      parentResponseId: response.parent_response_id
+      updatedAt: response.updated_at
     };
   });
 
@@ -283,25 +238,28 @@ export async function fetchInspectionData(inspectionId) {
       responsibles = responsible ? [responsible] : [];
     }
 
-    console.log(`Fetching checklist items using tree function for checklist: ${inspectionData.checklist_id}`);
+    console.log(`Fetching checklist items for checklist: ${inspectionData.checklist_id}`);
 
-    // Use the new tree function to load the hierarchical checklist items
+    // Load the checklist items
     const { data: checklistItems, error: checklistError } = await supabase
-      .rpc("get_checklist_tree", { checklist_id_param: inspectionData.checklist_id });
+      .from("checklist_itens")
+      .select("*")
+      .eq("checklist_id", inspectionData.checklist_id)
+      .order("ordem", { ascending: true });
 
     if (checklistError) {
-      console.error("Error fetching checklist tree:", checklistError);
+      console.error("Error fetching checklist items:", checklistError);
       throw checklistError;
     }
 
-    console.log(`Found ${checklistItems?.length || 0} checklist items (hierarchical)`);
+    console.log(`Found ${checklistItems?.length || 0} checklist items`);
 
     const { parsedQuestions, groupsMap } = processChecklistItems(checklistItems);
     const groups = Array.from(groupsMap.values()).sort((a, b) => a.order - b.order);
 
-    // Load responses for this inspection using the new table
+    // Load responses for this inspection
     const { data: responsesData } = await supabase
-      .from("checklist_item_responses")
+      .from("inspection_responses")
       .select("*")
       .eq("inspection_id", inspectionId);
 

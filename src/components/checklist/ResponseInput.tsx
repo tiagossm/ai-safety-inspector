@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { Input } from "@/components/ui/input";
 import { 
@@ -45,7 +45,7 @@ export function QuestionEditor({
 
   // Convert database response type to frontend type for proper display
   const frontendResponseType = question.responseType 
-    ? databaseToFrontendResponseType(question.responseType) as "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature"
+    ? databaseToFrontendResponseType(question.responseType) as "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature" | "time" | "date"
     : "yes_no";
 
   const handleUpdate = (field: keyof ChecklistQuestion, value: any) => {
@@ -114,27 +114,6 @@ export function QuestionEditor({
   };
 
   const userHint = parseHint(question.hint);
-
-  // Sincroniza as opções de mídia com enableAllMedia
-  useEffect(() => {
-    if (onUpdate) {
-      if (
-        question.allowsPhoto !== enableAllMedia ||
-        question.allowsVideo !== enableAllMedia ||
-        question.allowsAudio !== enableAllMedia ||
-        question.allowsFiles !== enableAllMedia
-      ) {
-        onUpdate({
-          ...question,
-          allowsPhoto: enableAllMedia,
-          allowsVideo: enableAllMedia,
-          allowsAudio: enableAllMedia,
-          allowsFiles: enableAllMedia,
-        });
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enableAllMedia]);
 
   return (
     <div className={`border rounded-md p-4 ${isSubQuestion ? 'bg-gray-50' : 'bg-white'}`}>

@@ -1,16 +1,15 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { ChecklistEditActions } from "@/components/new-checklist/edit/ChecklistEditActions";
 import { LoadingState } from "@/components/new-checklist/edit/LoadingState";
 import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 import { ChecklistEditorProvider } from "@/contexts/ChecklistEditorContext";
-import { ChecklistHeader } from "@/components/new-checklist/edit/ChecklistHeader";
+import { ChecklistHeaderExpanded } from "@/components/new-checklist/edit/ChecklistHeaderExpanded";
 import { useChecklistEditorContext } from "@/hooks/new-checklist/useChecklistEditorContext";
-import { ChecklistBasicInfo } from "./ChecklistBasicInfo";
+import { ChecklistBasicInfoExpanded } from "./ChecklistBasicInfoExpanded";
 import { ChecklistQuestionList } from "./ChecklistQuestionList";
 import { toast } from "sonner";
-import { ChecklistQuestion } from "@/types/newChecklist";
 
 export function ChecklistEditorContainer() {
   const editorContext = useChecklistEditorContext();
@@ -56,64 +55,76 @@ export function ChecklistEditorContainer() {
     id: editorContext.id,
   };
   
-  // Enhanced save handler to provide feedback and navigate after success
+  // Manual save handler
   const handleSave = async (): Promise<void> => {
     try {
-      toast.info("Salvando checklist...", { duration: 2000 });
-      if (editorContext.handleSave) {
-        const success = await editorContext.handleSave();
-        if (success) {
-          toast.success("Checklist salvo com sucesso!", { duration: 5000 });
-          navigate("/new-checklists");
-        } else {
-          toast.error("Erro ao salvar checklist", { duration: 5000 });
-        }
+      const success = await editorContext.handleSave();
+      if (success) {
+        navigate("/new-checklists");
       }
     } catch (error) {
       console.error("Error saving checklist:", error);
-      toast.error(`Erro ao salvar checklist: ${error instanceof Error ? error.message : "Erro desconhecido"}`, { duration: 5000 });
+      toast.error(`Erro ao salvar checklist: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
     }
   };
 
-  // The local handleStartInspection is removed. We'll use the one from context.
+  // Start inspection handler
+  const handleStartInspection = async (): Promise<void> => {
+    if (!editorContext.id) {
+      toast.error("É necessário salvar o checklist antes de iniciar a inspeção");
+      return;
+    }
+    try {
+      console.log(`Redirecionando para inspeção com checklistId=${editorContext.id}`);
+      navigate(`/inspections/new?checklistId=${editorContext.id}`);
+    } catch (error) {
+      console.error("Error starting inspection:", error);
+      toast.error(`Erro ao iniciar inspeção: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
+    }
+  };
   
   return (
     <ChecklistEditorProvider value={contextValue}>
       <div className="space-y-6">
-        {/* Header section with question counter */}
-        <ChecklistHeader 
-          totalQuestions={editorContext.questions.length}
-          totalGroups={editorContext.nonEmptyGroups.length}
+        {/* Header section */}
+        <ChecklistHeaderExpanded 
           onBack={() => navigate("/new-checklists")}
           onRefresh={() => {
             if (editorContext.id) {
-              toast.info("Recarregando dados...", { duration: 2000 });
+              toast.info("Recarregando dados...");
               if (editorContext.refetch) {
                 editorContext.refetch();
               }
             }
           }}
-          onStartInspection={editorContext.handleStartInspection}
+          onStartInspection={handleStartInspection}
           onSave={handleSave}
+          isSaving={editorContext.isSubmitting}
         />
         
-        {/* Main content without tabs */}
+        {/* Form section */}
         <form onSubmit={(e) => {
           e.preventDefault();
           handleSave();
         }} className="space-y-6">
           {/* Basic information section */}
-          <ChecklistBasicInfo
+          <ChecklistBasicInfoExpanded
             title={editorContext.title}
             description={editorContext.description}
             category={editorContext.category}
             isTemplate={editorContext.isTemplate}
             status={editorContext.status}
+            companyId={editorContext.companyId}
+            responsibleId={editorContext.responsibleId}
+            dueDate={editorContext.dueDate}
             onTitleChange={editorContext.setTitle}
             onDescriptionChange={editorContext.setDescription}
             onCategoryChange={editorContext.setCategory}
             onIsTemplateChange={editorContext.setIsTemplate}
             onStatusChange={editorContext.setStatus}
+            onCompanyChange={editorContext.setCompanyId}
+            onResponsibleChange={editorContext.setResponsibleId}
+            onDueDateChange={editorContext.setDueDate}
           />
           
           {/* Questions section */}
@@ -123,11 +134,10 @@ export function ChecklistEditorContainer() {
           <ChecklistEditActions
             isSubmitting={editorContext.isSubmitting}
             onCancel={() => navigate("/new-checklists")}
-            onStartInspection={editorContext.handleStartInspection}
+            onStartInspection={handleStartInspection}
             onSave={handleSave}
           />
         </form>
-        
         <FloatingNavigation threshold={400} />
       </div>
     </ChecklistEditorProvider>

@@ -1,163 +1,132 @@
 
-import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { NewChecklist } from "@/types/checklist";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { useChecklistFormSubmit } from "./form/useChecklistFormSubmit";
-import { CompanyListItem } from "@/types/CompanyListItem";
+import { useChecklistUsers } from "./form/useChecklistUsers";
 import { useChecklistCompanies } from "./form/useChecklistCompanies";
-
-export type AIAssistantType = 'general' | 'workplace-safety' | 'compliance' | 'quality';
+import { useChecklistFormSubmit } from "./form/useChecklistFormSubmit";
 
 export function useChecklistCreation() {
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<string>("ai");
   const [form, setForm] = useState<NewChecklist>({
     title: "",
     description: "",
     is_template: false,
     status_checklist: "ativo",
     category: "",
-    status: "active"
+    company_id: null,
+    responsible_id: null
   });
   
-  // Form data
-  const [users, setUsers] = useState<any[]>([]);
-  const [loadingUsers, setLoadingUsers] = useState<boolean>(true);
-  const { companies, loadingCompanies } = useChecklistCompanies();
-  
-  // Import related state
   const [file, setFile] = useState<File | null>(null);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [numQuestions, setNumQuestions] = useState(10);
+  const [openAIAssistant, setOpenAIAssistant] = useState("");
+  const [importedQuestions, setImportedQuestions] = useState<any[]>([]);
   
-  // AI related state
-  const [aiPrompt, setAiPrompt] = useState<string>("");
-  const [numQuestions, setNumQuestions] = useState<number>(10);
-  const [aiLoading, setAiLoading] = useState<boolean>(false);
-  const [selectedAssistant, setSelectedAssistant] = useState<AIAssistantType>("general");
-  const [openAIAssistant, setOpenAIAssistant] = useState<string>("");
-  
-  // Question management
-  const [questions, setQuestions] = useState<Array<{ text: string; type: string; required: boolean; allowPhoto: boolean; allowVideo: boolean; allowAudio: boolean; options?: string[]; hint?: string; weight?: number; parentId?: string; conditionValue?: string }>>([
-    { text: "", type: "sim/não", required: true, allowPhoto: true, allowVideo: false, allowAudio: false }
-  ]);
-  
-  // Submission handling
-  const { isSubmitting, handleSubmit } = useChecklistFormSubmit();
-  
-  // Fetch users
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        setLoadingUsers(true);
-        
-        const { data, error } = await supabase
-          .from('users')
-          .select('id, name, email')
-          .eq('status', 'active')
-          .order('name', { ascending: true });
-          
-        if (error) {
-          console.error("Error fetching users:", error);
-          toast.error("Erro ao carregar usuários");
-          throw error;
-        }
-        
-        setUsers(data || []);
-      } catch (error) {
-        console.error("Error in fetchUsers:", error);
-      } finally {
-        setLoadingUsers(false);
-      }
-    };
-    
-    fetchUsers();
-  }, []);
-  
-  // Handle file selection for import
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setFile(e.target.files[0]);
-    } else {
-      setFile(null);
+  const [questions, setQuestions] = useState([
+    {
+      text: "",
+      type: "sim/não",
+      required: true,
+      allowPhoto: false,
+      allowVideo: false,
+      allowAudio: false,
+      options: [] as string[],
+      hint: "",
+      weight: 1,
+      parentId: "",
+      conditionValue: ""
     }
+  ]);
+
+  const { users, isLoading: loadingUsers } = useChecklistUsers();
+  const { companies, loadingCompanies } = useChecklistCompanies();
+  const { isSubmitting, handleSubmit: handleFormSubmit } = useChecklistFormSubmit();
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0] || null;
+    setFile(selectedFile);
   };
-  
-  // Clear selected file
+
   const clearFile = () => {
     setFile(null);
   };
-  
-  // Add a question
+
+  const handleImportedQuestions = (importedData: any[]) => {
+    setImportedQuestions(importedData);
+    console.log("Perguntas importadas salvas:", importedData);
+  };
+
   const handleAddQuestion = () => {
-    setQuestions([...questions, { text: "", type: "sim/não", required: true, allowPhoto: true, allowVideo: false, allowAudio: false }]);
+    setQuestions([
+      ...questions,
+      {
+        text: "",
+        type: "sim/não",
+        required: true,
+        allowPhoto: false,
+        allowVideo: false,
+        allowAudio: false,
+        options: [] as string[],
+        hint: "",
+        weight: 1,
+        parentId: "",
+        conditionValue: ""
+      }
+    ]);
   };
-  
-  // Remove a question
+
   const handleRemoveQuestion = (index: number) => {
-    const newQuestions = [...questions];
-    newQuestions.splice(index, 1);
-    setQuestions(newQuestions);
-  };
-  
-  // Update a question
-  const handleQuestionChange = (
-    index: number,
-    field: string,
-    value: string | boolean
-  ) => {
-    const newQuestions = [...questions];
-    (newQuestions[index] as any)[field] = value;
-    setQuestions(newQuestions);
-  };
-  
-  // Handle form submission
-  const submitForm = async (e: React.FormEvent): Promise<boolean> => {
-    try {
-      return await handleSubmit(
-        e, 
-        activeTab, 
-        form, 
-        questions, 
-        file, 
-        aiPrompt, 
-        openAIAssistant, 
-        numQuestions
-      );
-    } catch (error) {
-      console.error("Error in handleSubmit:", error);
-      toast.error(`Error submitting form: ${error instanceof Error ? error.message : "Unknown error"}`);
-      return false;
+    if (questions.length > 1) {
+      const newQuestions = questions.filter((_, i) => i !== index);
+      setQuestions(newQuestions);
     }
   };
-  
+
+  const handleQuestionChange = (index: number, field: string, value: string | boolean) => {
+    const newQuestions = [...questions];
+    newQuestions[index] = { ...newQuestions[index], [field]: value };
+    setQuestions(newQuestions);
+  };
+
+  const handleSubmit = async (e: React.FormEvent, activeTab: string = "manual"): Promise<boolean> => {
+    // Se temos perguntas importadas, usar elas no lugar das perguntas manuais
+    const questionsToUse = importedQuestions.length > 0 ? importedQuestions : questions;
+    
+    return await handleFormSubmit(
+      e,
+      activeTab,
+      form,
+      questionsToUse,
+      file,
+      aiPrompt,
+      openAIAssistant,
+      numQuestions
+    );
+  };
+
   return {
-    activeTab,
-    setActiveTab,
     form,
     setForm,
     users,
-    isSubmitting,
     loadingUsers,
+    companies,
+    loadingCompanies,
+    isSubmitting,
     file,
     handleFileChange,
     clearFile,
-    aiPrompt,
-    setAiPrompt,
-    numQuestions,
-    setNumQuestions,
-    aiLoading,
-    selectedAssistant,
-    setSelectedAssistant,
-    openAIAssistant,
-    setOpenAIAssistant,
     questions,
     handleAddQuestion,
     handleRemoveQuestion,
     handleQuestionChange,
-    handleSubmit: submitForm,
-    navigate,
-    companies,
-    loadingCompanies
+    handleSubmit,
+    aiPrompt,
+    setAiPrompt,
+    numQuestions,
+    setNumQuestions,
+    openAIAssistant,
+    setOpenAIAssistant,
+    importedQuestions,
+    handleImportedQuestions
   };
 }
