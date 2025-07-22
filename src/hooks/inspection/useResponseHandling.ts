@@ -4,6 +4,7 @@ import { ResponseData } from "./types/inspectionTypes";
 import { useMediaHandler } from "./useMediaHandler";
 import { useSubChecklistHandler } from "./useSubChecklistHandler";
 import { useSaveInspection } from "./useSaveInspection";
+import { useOptimizedResponseSaving } from "./useOptimizedResponseSaving";
 
 export type { ResponseData } from "./types/inspectionTypes";
 
@@ -47,6 +48,7 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
   const { handleMediaChange, handleMediaUpload } = useMediaHandler(inspectionId, handleResponseChange);
   const { handleSaveSubChecklistResponses } = useSubChecklistHandler(setResponses);
   const { saveInspection, isSaving } = useSaveInspection();
+  const { saveResponse, saveMultipleResponses, isSaving: isSavingOptimized } = useOptimizedResponseSaving();
 
   // Função para salvar a inspeção
   const handleSaveInspection = useCallback(async (responses: Record<string, any>, inspection: any) => {
@@ -74,6 +76,8 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
     handleMediaUpload,
     handleSaveInspection,
     handleSaveSubChecklistResponses,
-    savingResponses: savingData || isSaving
+    savingResponses: savingData || isSaving || isSavingOptimized,
+    saveResponse,
+    saveMultipleResponses
   };
 }

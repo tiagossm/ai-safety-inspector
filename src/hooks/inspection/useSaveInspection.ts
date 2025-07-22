@@ -26,20 +26,21 @@ export const useSaveInspection = () => {
   const [isSaving, setIsSaving] = useState(false);
   const navigate = useNavigate();
   
-  // Função para salvar respostas da inspeção
+  // Função para salvar respostas da inspeção na nova estrutura
   const saveResponses = async (inspectionId: string, responses: any[]) => {
     if (!responses || !responses.length) return true;
     
     let hasError = false;
     setIsSaving(true);
     
-    // Formatar os dados para inserção
+    // Formatar os dados para inserção na nova estrutura
     const responsesData = responses.map(r => ({
       inspection_id: inspectionId,
       question_id: r.questionId,
       answer: r.value,
       action_plan: r.actionPlan,
       comments: r.comments,
+      notes: r.notes,
       media_urls: r.mediaUrls || [],
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -76,11 +77,14 @@ export const useSaveInspection = () => {
           .update({
             status: inspection.status,
             updated_at: new Date().toISOString(),
-            inspector_name: inspection.inspectorName,
-            inspector_title: inspection.inspectorTitle,
-            company_name: inspection.companyName,
-            responsible_name: inspection.responsibleName,
-            location: inspection.location
+            location: inspection.location,
+            metadata: {
+              ...inspection.metadata,
+              inspector_name: inspection.inspectorName,
+              inspector_title: inspection.inspectorTitle,
+              company_name: inspection.companyName,
+              responsible_name: inspection.responsibleName
+            }
           })
           .eq("id", inspection.id)
       );
