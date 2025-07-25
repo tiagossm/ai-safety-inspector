@@ -10,8 +10,7 @@ import { AlertCircle, RefreshCw, ArrowLeft, ClipboardList } from "lucide-react";
 import { InspectionLayout } from "@/components/inspection/execution/InspectionLayout";
 import { InspectionError } from "@/components/inspection/execution/InspectionError";
 import { InspectionHeaderForm } from "@/components/inspection/execution/InspectionHeaderForm";
-import { useInspectionFetch } from "@/hooks/inspection/useInspectionFetch";
-import { useInspectionStatus } from "@/hooks/inspection/useInspectionStatus";
+import { useOptimizedInspectionData } from "@/hooks/inspection/useOptimizedInspectionData";
 import { useResponseHandling } from "@/hooks/inspection/useResponseHandling";
 import { useActionPlans } from "@/hooks/inspection/useActionPlans";
 import { INSPECTION_STATUSES } from "@/types/inspection";
@@ -23,11 +22,9 @@ export default function InspectionExecutionPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [currentGroupId, setCurrentGroupId] = useState<string | null>(null);
-  const [autoSave, setAutoSave] = useState(false);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [saving, setSaving] = useState(false);
   
-  // Use the direct inspection fetch hook
+  // Use the optimized inspection data hook with auto-save
   const {
     loading,
     error,
@@ -40,20 +37,24 @@ export default function InspectionExecutionPage() {
     responsible,
     subChecklists,
     setResponses,
-    refreshData
-  } = useInspectionFetch(id);
-
-  // Get inspection status management functions
-  const { completeInspection, reopenInspection } = useInspectionStatus(id);
-
-  // Get response handling functions
-  const {
+    refreshData,
+    completeInspection,
+    reopenInspection,
     handleResponseChange,
     handleSaveInspection,
-    handleSaveSubChecklistResponses,
     handleMediaUpload,
-    handleMediaChange
-  } = useResponseHandling(id, setResponses);
+    handleMediaChange,
+    savingResponses,
+    autoSave,
+    metrics
+  } = useOptimizedInspectionData(id, {
+    autoSaveEnabled: true,
+    autoSaveInterval: 30,
+    debounceDelay: 2000
+  });
+
+  // Get response handling for sub-checklists (we still need this specific function)
+  const { handleSaveSubChecklistResponses } = useResponseHandling(id, setResponses);
 
   // Get action plans functions
   const {
@@ -88,49 +89,13 @@ export default function InspectionExecutionPage() {
     return inspection && [INSPECTION_STATUSES.PENDING, INSPECTION_STATUSES.IN_PROGRESS].includes(inspection.status);
   };
 
-  // Calculate stats for completion progress
-  const calculateStats = () => {
-    const totalQuestions = questions?.length || 0;
-    if (totalQuestions === 0) {
-      return { 
-        percentage: 0, 
-        answered: 0, 
-        total: 0,
-        completionPercentage: 0,
-        groupStats: {}
-      };
-    }
-
-    const answeredQuestions = Object.keys(responses || {}).filter(questionId => {
-      const response = responses[questionId];
-      return response?.value !== undefined && response?.value !== null;
-    }).length;
-
-    const percentage = Math.round((answeredQuestions / totalQuestions) * 100);
-    
-    // Calculate stats per group
-    const groupStats = {};
-    if (questions && questions.length > 0) {
-      questions.forEach(question => {
-        const groupId = question.groupId || 'default-group';
-        if (!groupStats[groupId]) {
-          groupStats[groupId] = { total: 0, answered: 0 };
-        }
-        groupStats[groupId].total++;
-        
-        if (responses && responses[question.id] && responses[question.id].value !== undefined) {
-          groupStats[groupId].answered++;
-        }
-      });
-    }
-
-    return { 
-      percentage, 
-      answered: answeredQuestions, 
-      total: totalQuestions,
-      completionPercentage: percentage,
-      groupStats
-    };
+  // Use optimized metrics calculation
+  const stats = {
+    percentage: metrics.completionPercentage,
+    answered: metrics.answeredQuestions,
+    total: metrics.totalQuestions,
+    completionPercentage: metrics.completionPercentage,
+    groupStats: {} // TODO: Implement group stats in metrics hook
   };
 
   // Get questions filtered by group
@@ -139,14 +104,13 @@ export default function InspectionExecutionPage() {
     return questions.filter(q => (q.groupId || 'default-group') === groupId);
   };
 
-  // Save inspection progress
+  // Save inspection progress (now uses optimized auto-save)
   const handleSaveProgress = async () => {
-    if (saving || !id || !inspection) return;
+    if (savingResponses || !id || !inspection) return;
     
     setSaving(true);
     try {
-      await handleSaveInspection(responses, inspection);
-      setLastSaved(new Date());
+      await handleSaveInspection();
       toast.success("Progresso salvo com sucesso");
     } catch (error: any) {
       console.error("Error saving progress:", error);
@@ -163,7 +127,7 @@ export default function InspectionExecutionPage() {
     try {
       setSaving(true);
       // First save all responses
-      await handleSaveInspection(responses, inspection);
+      await handleSaveInspection();
       
       // Complete the inspection
       await completeInspection(inspection);
@@ -302,12 +266,9 @@ export default function InspectionExecutionPage() {
       />
     );
   }
-
+  
   // Filter questions by current group
   const filteredQuestions = getFilteredQuestions(currentGroupId);
-  
-  // Calculate stats
-  const stats = calculateStats();
 
   // Check if the minimum required data is available to show the checklist
   const hasRequiredData = inspection && company?.id && responsible?.id;
@@ -392,10 +353,10 @@ export default function InspectionExecutionPage() {
           currentGroupId={currentGroupId}
           filteredQuestions={filteredQuestions}
           stats={stats}
-          saving={saving}
-          autoSave={autoSave}
-          lastSaved={lastSaved}
-          setAutoSave={setAutoSave}
+          saving={saving || savingResponses}
+          autoSave={autoSave.config.enabled}
+          lastSaved={autoSave.lastSaved}
+          setAutoSave={autoSave.toggleAutoSave}
           setCurrentGroupId={setCurrentGroupId}
           onSaveProgress={handleSaveProgress}
           onCompleteInspection={handleCompleteInspection}

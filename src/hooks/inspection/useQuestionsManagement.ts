@@ -1,20 +1,16 @@
 
 import { useCallback, useMemo } from "react";
 
-export interface Question {
-  id: string;
-  groupId: string;
-  text: string;
-  [key: string]: any;
+// Use centralized types
+import { Question as BaseQuestion, InspectionResponse } from './types';
+
+export interface Question extends BaseQuestion {
+  text?: string; // backward compatibility
+  groupId?: string;
 }
 
-export interface ResponseData {
-  value?: any;
-  comment?: string;
-  actionPlan?: string;
-  mediaUrls?: string[];
-  [key: string]: any;
-}
+// Use centralized response type
+export type ResponseData = InspectionResponse;
 
 export function useQuestionsManagement(
   questions: Question[], 
@@ -29,7 +25,8 @@ export function useQuestionsManagement(
     
     return questions.map(q => ({
       ...q,
-      groupId: q.groupId || "default-group"
+      groupId: q.groupId || "default-group",
+      text: q.text || q.pergunta // support both formats
     }));
   }, [questions]);
 

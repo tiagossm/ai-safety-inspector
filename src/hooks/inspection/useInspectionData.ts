@@ -1,9 +1,5 @@
 
-import { useCallback } from "react";
-import { useInspectionFetch } from "@/hooks/inspection/useInspectionFetch";
-import { useInspectionStatus } from "@/hooks/inspection/useInspectionStatus";
-import { useQuestionsManagement, Question } from "@/hooks/inspection/useQuestionsManagement";
-import { useResponseHandling } from "@/hooks/inspection/useResponseHandling";
+import { useOptimizedInspectionData } from "./useOptimizedInspectionData";
 
 // Export type for the hook return value
 export interface InspectionDataHook {
@@ -30,72 +26,33 @@ export interface InspectionDataHook {
 }
 
 export function useInspectionData(inspectionId: string | undefined): InspectionDataHook {
-  // Use the fetch hook for loading data
-  const {
-    loading,
-    error,
-    detailedError,
-    inspection,
-    questions,
-    groups,
-    responses,
-    company,
-    responsible,
-    responsibles,
-    subChecklists,
-    setResponses,
-    refreshData,
-  } = useInspectionFetch(inspectionId);
-
-  // Use the status hook for completing/reopening the inspection
-  const { completeInspection, reopenInspection } = useInspectionStatus(inspectionId);
-  
-  // Use the questions management hook with the correct response handler
-  const {
-    handleResponseChange: onQuestionResponseChange
-  } = useQuestionsManagement(
-    questions as Question[], 
-    responses, 
-    setResponses
-  );
-
-  // Use the response handling hook (for uploads, media, etc.)
-  const {
-    handleResponseChange: _unusedHandleResponseChange,
-    handleMediaChange,
-    handleMediaUpload,
-    handleSaveInspection: saveInspection,
-    savingResponses
-  } = useResponseHandling(inspectionId, setResponses);
-
-  // Wrap the save inspection function to provide the current responses and inspection
-  // Modificamos para retornar Promise<void> em vez de Promise<boolean | void>
-  const handleSaveInspection = useCallback(async (): Promise<void> => {
-    if (!inspection) return;
-    await saveInspection(responses, inspection);
-    // Removemos o retorno explícito para garantir tipo void
-  }, [saveInspection, responses, inspection]);
+  // Use the optimized inspection data hook
+  const optimizedData = useOptimizedInspectionData(inspectionId, {
+    autoSaveEnabled: true,
+    autoSaveInterval: 30,
+    debounceDelay: 2000
+  });
 
   return {
-    loading,
-    error,
-    detailedError,
-    inspection,
-    questions,
-    groups,
-    responses,
-    company,
-    responsible,
-    responsibles,
-    subChecklists,
-    setResponses,
-    refreshData,
-    completeInspection,
-    reopenInspection,
-    handleResponseChange: onQuestionResponseChange, // aqui é o correto!
-    handleMediaUpload,
-    handleMediaChange,
-    handleSaveInspection,
-    savingResponses
+    loading: optimizedData.loading,
+    error: optimizedData.error,
+    detailedError: optimizedData.detailedError,
+    inspection: optimizedData.inspection,
+    questions: optimizedData.questions,
+    groups: optimizedData.groups,
+    responses: optimizedData.responses,
+    company: optimizedData.company,
+    responsible: optimizedData.responsible,
+    responsibles: optimizedData.responsibles,
+    subChecklists: optimizedData.subChecklists,
+    setResponses: optimizedData.setResponses,
+    refreshData: optimizedData.refreshData,
+    completeInspection: optimizedData.completeInspection,
+    reopenInspection: optimizedData.reopenInspection,
+    handleResponseChange: optimizedData.handleResponseChange,
+    handleMediaUpload: optimizedData.handleMediaUpload,
+    handleMediaChange: optimizedData.handleMediaChange,
+    handleSaveInspection: optimizedData.handleSaveInspection,
+    savingResponses: optimizedData.savingResponses
   };
 }

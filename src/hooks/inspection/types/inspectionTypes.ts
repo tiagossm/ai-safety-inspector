@@ -1,9 +1,4 @@
 
-export interface ResponseData {
-  value?: any;
-  comment?: string;
-  actionPlan?: string;
-  mediaUrls?: string[];
-  subChecklistResponses?: Record<string, any>;
-  updatedAt?: string;
-}
+// Re-export from centralized types for backward compatibility
+export type { InspectionResponse as ResponseData } from './index';
+export type { Question, Inspection, Company, Responsible } from './index';

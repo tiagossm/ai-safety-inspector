@@ -4,7 +4,7 @@ import { toast } from "sonner";
 
 interface ResponseData {
   questionId: string;
-  value: any;
+  value?: any;
   actionPlan?: string;
   comments?: string;
   notes?: string;

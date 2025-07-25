@@ -7,3 +7,18 @@ export * from "./useInspectionStatus";
 export * from "./useQuestionsManagement";
 export * from "./useQuestionResponse";
 export * from "./useInspectionData";
+export * from "./useOptimizedInspectionData";
+export * from "./useAutoSave";
+export * from "./useInspectionMetrics";
+export * from "./useInspectionValidation";
+export * from "./useOptimizedSubChecklistHandler";
+export type { 
+  InspectionResponse, 
+  Question as CentralizedQuestion, 
+  Inspection, 
+  Company, 
+  Responsible, 
+  InspectionMetrics,
+  AutoSaveConfig,
+  AutoSaveState 
+} from "./types";
