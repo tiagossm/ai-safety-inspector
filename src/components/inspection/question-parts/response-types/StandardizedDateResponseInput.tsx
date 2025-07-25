@@ -5,41 +5,43 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ResponseWrapper } from "./components/ResponseWrapper";
+import { BaseResponseInput } from "./base/BaseResponseInput";
+import { standardizeResponse } from "@/utils/responseTypeStandardization";
 
-interface DateResponseInputProps {
-  value?: string;
-  onChange: (value: string) => void;
-  disabled?: boolean;
+interface StandardizedDateResponseInputProps {
+  question: any;
+  response: any;
+  onResponseChange: (data: any) => void;
+  inspectionId?: string;
+  actionPlan?: any;
+  onSaveActionPlan?: (data: any) => Promise<void>;
+  onMediaChange?: (mediaUrls: string[]) => void;
+  onApplyAISuggestion?: (suggestion: string) => void;
   readOnly?: boolean;
 }
 
-export function DateResponseInput({
-  value,
-  onChange,
-  disabled = false,
-  readOnly = false
-}: DateResponseInputProps) {
+export function StandardizedDateResponseInput(props: StandardizedDateResponseInputProps) {
   const [open, setOpen] = useState(false);
-  const selectedDate = value ? new Date(value) : undefined;
+  const standardResponse = standardizeResponse(props.response);
+  const selectedDate = standardResponse.value ? new Date(standardResponse.value) : undefined;
 
   const handleDateChange = (date: Date | undefined) => {
     setOpen(false);
-    if (date) {
-      onChange(format(date, "yyyy-MM-dd"));
-    } else {
-      onChange("");
-    }
+    const updatedResponse = {
+      ...standardResponse,
+      value: date ? format(date, "yyyy-MM-dd") : ""
+    };
+    props.onResponseChange(updatedResponse);
   };
 
   return (
-    <ResponseWrapper>
+    <BaseResponseInput {...props}>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             className="w-full justify-start text-left font-normal"
-            disabled={disabled || readOnly}
+            disabled={props.readOnly}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {selectedDate
@@ -52,12 +54,12 @@ export function DateResponseInput({
             mode="single"
             selected={selectedDate}
             onSelect={handleDateChange}
-            disabled={disabled || readOnly}
+            disabled={props.readOnly}
             locale={ptBR}
             initialFocus
           />
         </PopoverContent>
       </Popover>
-    </ResponseWrapper>
+    </BaseResponseInput>
   );
 }

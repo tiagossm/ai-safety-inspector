@@ -1,18 +1,14 @@
-
-import React, { useCallback } from "react";
+import React from "react";
 import { YesNoResponseInput } from "./response-types/YesNoResponseInput";
-import { TextResponseInput } from "./response-types/TextResponseInput";
-import { DateResponseInput } from "./response-types/DateResponseInput";
-import { TimeResponseInput } from "./response-types/TimeResponseInput";
-import { NumberInput } from "@/components/inspection/question-inputs/NumberInput";
-import { MultipleChoiceInput } from "@/components/inspection/question-inputs/MultipleChoiceInput";
-import { ParagraphInput } from "@/components/inspection/question-inputs/ParagraphInput";
-import { DropdownInput } from "@/components/inspection/question-inputs/DropdownInput";
-import { MultipleSelectInput } from "@/components/inspection/question-inputs/MultipleSelectInput";
-import { DateTimeInput } from "@/components/inspection/question-inputs/DateTimeInput";
-import { PhotoInput } from "@/components/inspection/question-inputs/PhotoInput";
-import { SignatureInput } from "@/components/checklist/SignatureInput";
-import { databaseToFrontendResponseType } from "@/utils/responseTypeMap";
+import { StandardizedTextResponseInput } from "./response-types/StandardizedTextResponseInput";
+import { StandardizedDateResponseInput } from "./response-types/StandardizedDateResponseInput";
+import { StandardizedTimeResponseInput } from "./response-types/StandardizedTimeResponseInput";
+import { StandardizedNumberResponseInput } from "./response-types/StandardizedNumberResponseInput";
+import { StandardizedMultipleChoiceResponseInput } from "./response-types/StandardizedMultipleChoiceResponseInput";
+import { StandardizedParagraphResponseInput } from "./response-types/StandardizedParagraphResponseInput";
+import { StandardizedDropdownResponseInput } from "./response-types/StandardizedDropdownResponseInput";
+import { StandardizedMultipleSelectResponseInput } from "./response-types/StandardizedMultipleSelectResponseInput";
+import { StandardizedDateTimeResponseInput } from "./response-types/StandardizedDateTimeResponseInput";
 import { standardizeResponse, standardizeQuestion } from "@/utils/responseTypeStandardization";
 
 interface ResponseInputRendererProps {
@@ -23,6 +19,7 @@ interface ResponseInputRendererProps {
   onMediaChange?: (mediaUrls: string[]) => void;
   actionPlan?: any;
   onSaveActionPlan?: (data: any) => Promise<void>;
+  onApplyAISuggestion?: (suggestion: string) => void;
   readOnly?: boolean;
 }
 
@@ -34,259 +31,66 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   onMediaChange,
   actionPlan,
   onSaveActionPlan,
+  onApplyAISuggestion,
   readOnly = false
 }) => {
   // Padronizar questão e resposta
   const standardQuestion = standardizeQuestion(question);
-  const standardResponse = standardizeResponse(response);
   const responseType = standardQuestion.responseType;
   
   console.log("ResponseInputRenderer: rendering with responseType:", responseType);
-  console.log("ResponseInputRenderer: standardized response:", standardResponse);
 
-  // Get mediaUrls from standardized response
-  const mediaUrls = standardResponse.mediaUrls;
-
-  const handleMediaChange = useCallback((urls: string[]) => {
-    console.log("ResponseInputRenderer: Media changed:", urls);
-    
-    const updatedResponse = {
-      ...standardResponse,
-      mediaUrls: urls
-    };
-    
-    console.log("ResponseInputRenderer: Updating response with media URLs:", updatedResponse);
-    onResponseChange(updatedResponse);
-    
-    if (onMediaChange) {
-      onMediaChange(urls);
-    }
-  }, [standardResponse, onResponseChange, onMediaChange]);
-
-  const handleResponseWithAnalysis = useCallback((updatedData: any) => {
-    console.log("ResponseInputRenderer: Handling response with analysis:", updatedData);
-
-    const updatedResponse = {
-      ...standardResponse,
-      ...updatedData,
-    };
-
-    onResponseChange(updatedResponse);
-  }, [standardResponse, onResponseChange]);
-
-  const handleSaveActionPlan = useCallback(
-    async (actionPlanData: any) => {
-      console.log("ResponseInputRenderer: Saving action plan:", actionPlanData);
-      if (onSaveActionPlan) {
-        await onSaveActionPlan(actionPlanData);
-      }
-    },
-    [onSaveActionPlan]
-  );
-
-  // Função para lidar com mudanças em componentes simples
-  const handleSimpleValueChange = useCallback((value: any) => {
-    onResponseChange({
-      ...standardResponse,
-      value
-    });
-  }, [standardResponse, onResponseChange]);
+  // Props comuns para todos os componentes padronizados
+  const commonProps = {
+    question: standardQuestion,
+    response,
+    onResponseChange,
+    inspectionId,
+    actionPlan,
+    onSaveActionPlan,
+    onMediaChange,
+    onApplyAISuggestion,
+    readOnly
+  };
 
   if (responseType === "yes_no") {
-    return (
-      <YesNoResponseInput
-        question={standardQuestion}
-        response={standardResponse}
-        inspectionId={inspectionId}
-        onResponseChange={onResponseChange}
-        onMediaChange={handleMediaChange}
-        actionPlan={actionPlan}
-        onSaveActionPlan={handleSaveActionPlan}
-        readOnly={readOnly}
-        onApplyAISuggestion={(suggestion: string) =>
-          handleResponseWithAnalysis({ aiSuggestion: suggestion })
-        }
-      />
-    );
+    return <YesNoResponseInput {...commonProps} />;
   }
 
   if (responseType === "text") {
-    return (
-      <TextResponseInput
-        question={standardQuestion}
-        response={standardResponse}
-        onResponseChange={onResponseChange}
-        onMediaChange={handleMediaChange}
-        onApplyAISuggestion={(suggestion: string) =>
-          handleResponseWithAnalysis({ aiSuggestion: suggestion })
-        }
-        readOnly={readOnly}
-        inspectionId={inspectionId}
-        actionPlan={actionPlan}
-        onSaveActionPlan={handleSaveActionPlan}
-      />
-    );
+    return <StandardizedTextResponseInput {...commonProps} />;
   }
 
   if (responseType === "paragraph") {
-    return (
-      <div className="space-y-2">
-        <ParagraphInput
-          value={standardResponse.value}
-          onChange={handleSimpleValueChange}
-          readOnly={readOnly}
-        />
-        {(standardQuestion.allowsPhoto || standardQuestion.allowsVideo || standardQuestion.allowsAudio || standardQuestion.allowsFiles) && (
-          <PhotoInput
-            mediaUrls={mediaUrls}
-            onAddMedia={() => console.log("Adicionar mídia para questão paragraph")}
-            onDeleteMedia={(url) => {
-              const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
-              handleMediaChange(updatedUrls);
-            }}
-            allowsPhoto={standardQuestion.allowsPhoto}
-            allowsVideo={standardQuestion.allowsVideo}
-            allowsAudio={standardQuestion.allowsAudio}
-            allowsFiles={standardQuestion.allowsFiles}
-          />
-        )}
-      </div>
-    );
+    return <StandardizedParagraphResponseInput {...commonProps} />;
   }
 
   if (responseType === "dropdown") {
-    return (
-      <div className="space-y-2">
-        <DropdownInput 
-          options={standardQuestion.options || []}
-          value={standardResponse.value}
-          onChange={handleSimpleValueChange}
-          readOnly={readOnly}
-        />
-        {(standardQuestion.allowsPhoto || standardQuestion.allowsVideo || standardQuestion.allowsAudio || standardQuestion.allowsFiles) && (
-          <PhotoInput
-            mediaUrls={mediaUrls}
-            onAddMedia={() => console.log("Adicionar mídia para questão dropdown")}
-            onDeleteMedia={(url) => {
-              const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
-              handleMediaChange(updatedUrls);
-            }}
-            allowsPhoto={standardQuestion.allowsPhoto}
-            allowsVideo={standardQuestion.allowsVideo}
-            allowsAudio={standardQuestion.allowsAudio}
-            allowsFiles={standardQuestion.allowsFiles}
-          />
-        )}
-      </div>
-    );
+    return <StandardizedDropdownResponseInput {...commonProps} />;
   }
 
   if (responseType === "multiple_select") {
-    return (
-      <div className="space-y-2">
-        <MultipleSelectInput 
-          options={standardQuestion.options || []}
-          value={Array.isArray(standardResponse.value) ? standardResponse.value : []}
-          onChange={(value) => handleSimpleValueChange(value)}
-          readOnly={readOnly}
-        />
-        {(standardQuestion.allowsPhoto || standardQuestion.allowsVideo || standardQuestion.allowsAudio || standardQuestion.allowsFiles) && (
-          <PhotoInput
-            mediaUrls={mediaUrls}
-            onAddMedia={() => console.log("Adicionar mídia para questão multiple_select")}
-            onDeleteMedia={(url) => {
-              const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
-              handleMediaChange(updatedUrls);
-            }}
-            allowsPhoto={standardQuestion.allowsPhoto}
-            allowsVideo={standardQuestion.allowsVideo}
-            allowsAudio={standardQuestion.allowsAudio}
-            allowsFiles={standardQuestion.allowsFiles}
-          />
-        )}
-      </div>
-    );
+    return <StandardizedMultipleSelectResponseInput {...commonProps} />;
   }
 
   if (responseType === "datetime") {
-    return (
-      <DateTimeInput
-        value={standardResponse.value}
-        onChange={(value) => handleSimpleValueChange(value)}
-        readOnly={readOnly}
-      />
-    );
+    return <StandardizedDateTimeResponseInput {...commonProps} />;
   }
 
   if (responseType === "multiple_choice") {
-    return (
-      <div className="space-y-2">
-        <MultipleChoiceInput 
-          options={standardQuestion.options || []}
-          value={standardResponse.value}
-          onChange={handleSimpleValueChange}
-        />
-        {(standardQuestion.allowsPhoto || standardQuestion.allowsVideo || standardQuestion.allowsAudio || standardQuestion.allowsFiles) && (
-          <PhotoInput
-            mediaUrls={mediaUrls}
-            onAddMedia={() => console.log("Adicionar mídia para questão multiple_choice")}
-            onDeleteMedia={(url) => {
-              const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
-              handleMediaChange(updatedUrls);
-            }}
-            allowsPhoto={standardQuestion.allowsPhoto}
-            allowsVideo={standardQuestion.allowsVideo}
-            allowsAudio={standardQuestion.allowsAudio}
-            allowsFiles={standardQuestion.allowsFiles}
-          />
-        )}
-      </div>
-    );
+    return <StandardizedMultipleChoiceResponseInput {...commonProps} />;
   }
 
   if (responseType === "numeric") {
-    return (
-      <div className="space-y-2">
-        <NumberInput
-          value={standardResponse.value}
-          onChange={handleSimpleValueChange}
-        />
-        {(standardQuestion.allowsPhoto || standardQuestion.allowsVideo || standardQuestion.allowsAudio || standardQuestion.allowsFiles) && (
-          <PhotoInput
-            mediaUrls={mediaUrls}
-            onAddMedia={() => console.log("Adicionar mídia para questão numeric")}
-            onDeleteMedia={(url) => {
-              const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
-              handleMediaChange(updatedUrls);
-            }}
-            allowsPhoto={standardQuestion.allowsPhoto}
-            allowsVideo={standardQuestion.allowsVideo}
-            allowsAudio={standardQuestion.allowsAudio}
-            allowsFiles={standardQuestion.allowsFiles}
-          />
-        )}
-      </div>
-    );
+    return <StandardizedNumberResponseInput {...commonProps} />;
   }
 
   if (responseType === "date") {
-    return (
-      <DateResponseInput
-        value={standardResponse.value}
-        onChange={(value) => handleSimpleValueChange(value)}
-        readOnly={readOnly}
-      />
-    );
+    return <StandardizedDateResponseInput {...commonProps} />;
   }
 
   if (responseType === "time") {
-    return (
-      <TimeResponseInput
-        value={standardResponse.value}
-        onChange={(value) => handleSimpleValueChange(value)}
-        readOnly={readOnly}
-      />
-    );
+    return <StandardizedTimeResponseInput {...commonProps} />;
   }
 
   return (
