@@ -105,6 +105,7 @@ export function MediaAnalysisDialog({
   
   useEffect(() => {
     if (!open) return;
+    
     allImages.forEach(url => {
       const state = analysisMap[url];
       if (!state || state.status === 'pending' || state.status === 'retry') {
@@ -137,9 +138,8 @@ export function MediaAnalysisDialog({
         });
       }
     });
-    // eslint-disable-next-line
-  }, [open, analyze, mediaUrl, mediaType, questionText, userAnswer, allImages]);
-  // Removido analysisMap e .join('-') das dependências
+  }, [open, analyze, mediaType, questionText, userAnswer, allImages.join('-')]);
+  // Apenas dependências essenciais que não mudam constantemente
 
   const handleRetry = (url: string) => {
     setAnalysisMap(prev => ({

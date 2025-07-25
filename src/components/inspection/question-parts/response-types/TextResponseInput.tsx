@@ -235,23 +235,33 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
 
       <div className="flex flex-wrap gap-2">
         <ActionPlanButton
-          onActionPlanClick={() => {/* ... */}}
+          onActionPlanClick={() => {
+            if (onSaveActionPlan) {
+              // Implementar abertura do modal de plano de ação
+              console.log("Abrir modal de plano de ação");
+            }
+          }}
           readOnly={readOnly}
         />
         {(question.allowsPhoto || question.allowsVideo) && (
-          <MediaAnalysisButton onOpenAnalysis={() => {/* ... */}} />
+          <MediaAnalysisButton onOpenAnalysis={() => {
+            console.log("Abrir análise de mídia");
+          }} />
         )}
       </div>
+      
       <MediaUploadInput
         mediaUrls={response?.mediaUrls || []}
-        onMediaChange={(urls) => {/* ... */}}
-        allowsPhoto={question.allowsPhoto}
-        allowsVideo={question.allowsVideo}
-        allowsAudio={question.allowsAudio}
-        allowsFiles={question.allowsFiles}
+        onMediaChange={handleMediaChange}
+        allowsPhoto={question.allowsPhoto || question.permite_foto || false}
+        allowsVideo={question.allowsVideo || question.permite_video || false}
+        allowsAudio={question.allowsAudio || question.permite_audio || false}
+        allowsFiles={question.allowsFiles || question.permite_files || false}
         readOnly={readOnly}
-        questionText={question.text}
-        // ...outros props...
+        questionText={question.text || question.pergunta || ""}
+        onSaveAnalysis={handleSaveAnalysis}
+        analysisResults={analysisResults}
+        onApplyAISuggestion={onApplyAISuggestion}
       />
     </div>
   );

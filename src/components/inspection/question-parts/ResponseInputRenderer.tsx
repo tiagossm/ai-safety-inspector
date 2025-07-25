@@ -13,6 +13,7 @@ import { DateTimeInput } from "@/components/inspection/question-inputs/DateTimeI
 import { PhotoInput } from "@/components/inspection/question-inputs/PhotoInput";
 import { SignatureInput } from "@/components/checklist/SignatureInput";
 import { databaseToFrontendResponseType } from "@/utils/responseTypeMap";
+import { standardizeResponse, standardizeQuestion } from "@/utils/responseTypeStandardization";
 
 interface ResponseInputRendererProps {
   question: any;
@@ -35,24 +36,22 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   onSaveActionPlan,
   readOnly = false
 }) => {
-  // Normalizar o tipo de resposta
-  const dbResponseType = question.responseType || question.tipo_resposta || "sim/não";
-  const responseType = databaseToFrontendResponseType(dbResponseType);
+  // Padronizar questão e resposta
+  const standardQuestion = standardizeQuestion(question);
+  const standardResponse = standardizeResponse(response);
+  const responseType = standardQuestion.responseType;
   
   console.log("ResponseInputRenderer: rendering with responseType:", responseType);
-  console.log("ResponseInputRenderer: current response:", response);
+  console.log("ResponseInputRenderer: standardized response:", standardResponse);
 
-  // Ensure response is always an object (even if empty)
-  const safeResponse = response || {};
-  
-  // Make sure mediaUrls is always an array
-  const mediaUrls = safeResponse.mediaUrls || [];
+  // Get mediaUrls from standardized response
+  const mediaUrls = standardResponse.mediaUrls;
 
   const handleMediaChange = useCallback((urls: string[]) => {
     console.log("ResponseInputRenderer: Media changed:", urls);
     
     const updatedResponse = {
-      ...safeResponse,
+      ...standardResponse,
       mediaUrls: urls
     };
     
@@ -62,18 +61,18 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     if (onMediaChange) {
       onMediaChange(urls);
     }
-  }, [safeResponse, onResponseChange, onMediaChange]);
+  }, [standardResponse, onResponseChange, onMediaChange]);
 
   const handleResponseWithAnalysis = useCallback((updatedData: any) => {
     console.log("ResponseInputRenderer: Handling response with analysis:", updatedData);
 
     const updatedResponse = {
-      ...safeResponse,
+      ...standardResponse,
       ...updatedData,
     };
 
     onResponseChange(updatedResponse);
-  }, [safeResponse, onResponseChange]);
+  }, [standardResponse, onResponseChange]);
 
   const handleSaveActionPlan = useCallback(
     async (actionPlanData: any) => {
@@ -88,16 +87,16 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   // Função para lidar com mudanças em componentes simples
   const handleSimpleValueChange = useCallback((value: any) => {
     onResponseChange({
-      ...safeResponse,
+      ...standardResponse,
       value
     });
-  }, [safeResponse, onResponseChange]);
+  }, [standardResponse, onResponseChange]);
 
   if (responseType === "yes_no") {
     return (
       <YesNoResponseInput
-        question={question}
-        response={safeResponse}
+        question={standardQuestion}
+        response={standardResponse}
         inspectionId={inspectionId}
         onResponseChange={onResponseChange}
         onMediaChange={handleMediaChange}
@@ -114,14 +113,17 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   if (responseType === "text") {
     return (
       <TextResponseInput
-        question={question}
-        response={safeResponse}
+        question={standardQuestion}
+        response={standardResponse}
         onResponseChange={onResponseChange}
         onMediaChange={handleMediaChange}
         onApplyAISuggestion={(suggestion: string) =>
           handleResponseWithAnalysis({ aiSuggestion: suggestion })
         }
         readOnly={readOnly}
+        inspectionId={inspectionId}
+        actionPlan={actionPlan}
+        onSaveActionPlan={handleSaveActionPlan}
       />
     );
   }
@@ -130,11 +132,11 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     return (
       <div className="space-y-2">
         <ParagraphInput
-          value={safeResponse.value}
+          value={standardResponse.value}
           onChange={handleSimpleValueChange}
           readOnly={readOnly}
         />
-        {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
+        {(standardQuestion.allowsPhoto || standardQuestion.allowsVideo || standardQuestion.allowsAudio || standardQuestion.allowsFiles) && (
           <PhotoInput
             mediaUrls={mediaUrls}
             onAddMedia={() => console.log("Adicionar mídia para questão paragraph")}
@@ -142,10 +144,10 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
               const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
               handleMediaChange(updatedUrls);
             }}
-            allowsPhoto={question.allowsPhoto}
-            allowsVideo={question.allowsVideo}
-            allowsAudio={question.allowsAudio}
-            allowsFiles={question.allowsFiles}
+            allowsPhoto={standardQuestion.allowsPhoto}
+            allowsVideo={standardQuestion.allowsVideo}
+            allowsAudio={standardQuestion.allowsAudio}
+            allowsFiles={standardQuestion.allowsFiles}
           />
         )}
       </div>
@@ -156,12 +158,12 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     return (
       <div className="space-y-2">
         <DropdownInput 
-          options={question.options || []}
-          value={safeResponse.value}
+          options={standardQuestion.options || []}
+          value={standardResponse.value}
           onChange={handleSimpleValueChange}
           readOnly={readOnly}
         />
-        {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
+        {(standardQuestion.allowsPhoto || standardQuestion.allowsVideo || standardQuestion.allowsAudio || standardQuestion.allowsFiles) && (
           <PhotoInput
             mediaUrls={mediaUrls}
             onAddMedia={() => console.log("Adicionar mídia para questão dropdown")}
@@ -169,10 +171,10 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
               const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
               handleMediaChange(updatedUrls);
             }}
-            allowsPhoto={question.allowsPhoto}
-            allowsVideo={question.allowsVideo}
-            allowsAudio={question.allowsAudio}
-            allowsFiles={question.allowsFiles}
+            allowsPhoto={standardQuestion.allowsPhoto}
+            allowsVideo={standardQuestion.allowsVideo}
+            allowsAudio={standardQuestion.allowsAudio}
+            allowsFiles={standardQuestion.allowsFiles}
           />
         )}
       </div>
@@ -183,12 +185,12 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     return (
       <div className="space-y-2">
         <MultipleSelectInput 
-          options={question.options || []}
-          value={Array.isArray(safeResponse.value) ? safeResponse.value : []}
+          options={standardQuestion.options || []}
+          value={Array.isArray(standardResponse.value) ? standardResponse.value : []}
           onChange={(value) => handleSimpleValueChange(value)}
           readOnly={readOnly}
         />
-        {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
+        {(standardQuestion.allowsPhoto || standardQuestion.allowsVideo || standardQuestion.allowsAudio || standardQuestion.allowsFiles) && (
           <PhotoInput
             mediaUrls={mediaUrls}
             onAddMedia={() => console.log("Adicionar mídia para questão multiple_select")}
@@ -196,10 +198,10 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
               const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
               handleMediaChange(updatedUrls);
             }}
-            allowsPhoto={question.allowsPhoto}
-            allowsVideo={question.allowsVideo}
-            allowsAudio={question.allowsAudio}
-            allowsFiles={question.allowsFiles}
+            allowsPhoto={standardQuestion.allowsPhoto}
+            allowsVideo={standardQuestion.allowsVideo}
+            allowsAudio={standardQuestion.allowsAudio}
+            allowsFiles={standardQuestion.allowsFiles}
           />
         )}
       </div>
@@ -209,7 +211,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   if (responseType === "datetime") {
     return (
       <DateTimeInput
-        value={safeResponse.value}
+        value={standardResponse.value}
         onChange={(value) => handleSimpleValueChange(value)}
         readOnly={readOnly}
       />
@@ -220,11 +222,11 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     return (
       <div className="space-y-2">
         <MultipleChoiceInput 
-          options={question.options || []}
-          value={safeResponse.value}
+          options={standardQuestion.options || []}
+          value={standardResponse.value}
           onChange={handleSimpleValueChange}
         />
-        {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
+        {(standardQuestion.allowsPhoto || standardQuestion.allowsVideo || standardQuestion.allowsAudio || standardQuestion.allowsFiles) && (
           <PhotoInput
             mediaUrls={mediaUrls}
             onAddMedia={() => console.log("Adicionar mídia para questão multiple_choice")}
@@ -232,10 +234,10 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
               const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
               handleMediaChange(updatedUrls);
             }}
-            allowsPhoto={question.allowsPhoto}
-            allowsVideo={question.allowsVideo}
-            allowsAudio={question.allowsAudio}
-            allowsFiles={question.allowsFiles}
+            allowsPhoto={standardQuestion.allowsPhoto}
+            allowsVideo={standardQuestion.allowsVideo}
+            allowsAudio={standardQuestion.allowsAudio}
+            allowsFiles={standardQuestion.allowsFiles}
           />
         )}
       </div>
@@ -246,10 +248,10 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     return (
       <div className="space-y-2">
         <NumberInput
-          value={safeResponse.value}
+          value={standardResponse.value}
           onChange={handleSimpleValueChange}
         />
-        {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
+        {(standardQuestion.allowsPhoto || standardQuestion.allowsVideo || standardQuestion.allowsAudio || standardQuestion.allowsFiles) && (
           <PhotoInput
             mediaUrls={mediaUrls}
             onAddMedia={() => console.log("Adicionar mídia para questão numeric")}
@@ -257,10 +259,10 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
               const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
               handleMediaChange(updatedUrls);
             }}
-            allowsPhoto={question.allowsPhoto}
-            allowsVideo={question.allowsVideo}
-            allowsAudio={question.allowsAudio}
-            allowsFiles={question.allowsFiles}
+            allowsPhoto={standardQuestion.allowsPhoto}
+            allowsVideo={standardQuestion.allowsVideo}
+            allowsAudio={standardQuestion.allowsAudio}
+            allowsFiles={standardQuestion.allowsFiles}
           />
         )}
       </div>
@@ -270,7 +272,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   if (responseType === "date") {
     return (
       <DateResponseInput
-        value={safeResponse.value}
+        value={standardResponse.value}
         onChange={(value) => handleSimpleValueChange(value)}
         readOnly={readOnly}
       />
@@ -280,7 +282,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   if (responseType === "time") {
     return (
       <TimeResponseInput
-        value={safeResponse.value}
+        value={standardResponse.value}
         onChange={(value) => handleSimpleValueChange(value)}
         readOnly={readOnly}
       />
@@ -290,7 +292,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   return (
     <div className="p-4 border border-red-300 bg-red-50 rounded-md">
       <p className="text-red-700">
-        Tipo de resposta não suportado: {responseType} (original: {dbResponseType})
+        Tipo de resposta não suportado: {responseType} (original: {standardQuestion.tipo_resposta})
       </p>
     </div>
   );
