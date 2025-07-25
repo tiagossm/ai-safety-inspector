@@ -92,13 +92,13 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
           state.setQuestions(questionsWithValidGroups);
         } else {
           const defaultGroup: ChecklistGroup = {
-            id: "default",
+            id: `group-${Date.now()}`,
             title: "Geral",
             order: 0
           };
           const questionsWithDefaultGroup = checklist.questions.map((q: any) => ({
             ...q,
-            groupId: "default",
+            groupId: defaultGroup.id,
             responseType: normalizeResponseType(q.responseType || q.tipo_resposta)
           }));
           state.setGroups([defaultGroup]);
@@ -107,7 +107,7 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
       } else {
         console.log("No questions found in checklist, creating default");
         const defaultGroup: ChecklistGroup = {
-          id: "default",
+          id: `group-${Date.now()}`,
           title: "Geral",
           order: 0
         };
@@ -122,7 +122,7 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
           allowsAudio: false,
           allowsFiles: false,
           order: 0,
-          groupId: "default"
+          groupId: defaultGroup.id
         };
         state.setGroups([defaultGroup]);
         state.setQuestions([defaultQuestion]);
@@ -188,7 +188,7 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
     });
 
     state.questions.forEach(question => {
-      const groupId = question.groupId || state.groups[0]?.id || "default";
+      const groupId = question.groupId || state.groups[0]?.id || `group-${Date.now()}`;
       if (!result.has(groupId)) {
         result.set(groupId, []);
       }

@@ -169,8 +169,9 @@ export function useChecklistById(checklistId: string | undefined) {
 
         // Extract group information from questions or create default group
         const groupsMap = new Map();
-        const defaultGroup = { id: "default", title: "Geral", order: 0 };
-        groupsMap.set("default", defaultGroup);
+        const defaultGroupId = `group-${Date.now()}`;
+        const defaultGroup = { id: defaultGroupId, title: "Geral", order: 0 };
+        groupsMap.set(defaultGroupId, defaultGroup);
 
         // Process questions to normalize formats
         const processedQuestions: ChecklistQuestion[] = questionsData.map((question) => {
@@ -181,7 +182,7 @@ export function useChecklistById(checklistId: string | undefined) {
           let normalizedOptions = normalizeOptions(question.opcoes);
           
           // Extract group info from hint if it exists
-          let groupId = "default";
+          let groupId = defaultGroupId;
           if (question.hint) {
             try {
               const hintData = JSON.parse(question.hint);

@@ -100,7 +100,7 @@ export function useChecklistEditorContext() {
           setGroups(checklist.groups);
         } else {
           const defaultGroup: ChecklistGroup = {
-            id: "default",
+            id: `group-${Date.now()}`,
             title: "Geral",
             order: 0
           };
@@ -108,7 +108,7 @@ export function useChecklistEditorContext() {
         }
       } else {
         const defaultGroup: ChecklistGroup = {
-          id: "default",
+          id: `group-${Date.now()}`,
           title: "Geral",
           order: 0
         };
@@ -124,7 +124,7 @@ export function useChecklistEditorContext() {
           allowsAudio: false,
           allowsFiles: false,
           order: 0,
-          groupId: "default",
+          groupId: defaultGroup.id,
           options: []
         };
         
@@ -151,7 +151,7 @@ export function useChecklistEditorContext() {
     });
     
     questions.forEach(question => {
-      const groupId = question.groupId || groups[0]?.id || "default";
+      const groupId = question.groupId || groups[0]?.id || `group-${Date.now()}`;
       if (!result.has(groupId)) {
         result.set(groupId, []);
       }
