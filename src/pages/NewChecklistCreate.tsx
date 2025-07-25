@@ -122,6 +122,12 @@ export default function NewChecklistCreate() {
                 isSubmitting={isSubmitting}
                 companies={companies}
                 loadingCompanies={loadingCompanies}
+                aiPrompt={aiPrompt}
+                setAiPrompt={setAiPrompt}
+                numQuestions={numQuestions}
+                setNumQuestions={setNumQuestions}
+                openAIAssistant={openAIAssistant}
+                setOpenAIAssistant={setOpenAIAssistant}
               />
             </TabsContent>
             

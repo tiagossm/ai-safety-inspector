@@ -14,6 +14,12 @@ interface AIChecklistCreatorProps {
   isSubmitting: boolean;
   companies: CompanyListItem[];
   loadingCompanies: boolean;
+  aiPrompt: string;
+  setAiPrompt: React.Dispatch<React.SetStateAction<string>>;
+  numQuestions: number;
+  setNumQuestions: React.Dispatch<React.SetStateAction<number>>;
+  openAIAssistant: string;
+  setOpenAIAssistant: React.Dispatch<React.SetStateAction<string>>;
 }
 
 export function AIChecklistCreator({
@@ -22,13 +28,16 @@ export function AIChecklistCreator({
   onSubmit,
   isSubmitting,
   companies,
-  loadingCompanies
+  loadingCompanies,
+  aiPrompt,
+  setAiPrompt,
+  numQuestions,
+  setNumQuestions,
+  openAIAssistant,
+  setOpenAIAssistant
 }: AIChecklistCreatorProps) {
   const navigate = useNavigate();
-  const [aiPrompt, setAiPrompt] = useState("");
-  const [numQuestions, setNumQuestions] = useState(10);
   const [selectedAssistant, setSelectedAssistant] = useState("general");
-  const [openAIAssistant, setOpenAIAssistant] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   
   const { assistants, loading: loadingAssistants } = useOpenAIAssistants();

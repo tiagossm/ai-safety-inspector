@@ -30,19 +30,25 @@ export default function CreateChecklist() {
     handleQuestionChange,
     handleSubmit,
     companies,
-    loadingCompanies
+    loadingCompanies,
+    aiPrompt,
+    setAiPrompt,
+    numQuestions,
+    setNumQuestions,
+    openAIAssistant,
+    setOpenAIAssistant
   } = useChecklistCreation();
 
   // Create wrapper functions that adapt to different component expectations
   // ManualCreateForm and ImportCreateForm expect Promise<boolean>
   const handleSubmitForManualAndImport = async (e: React.FormEvent): Promise<boolean> => {
-    const result = await handleSubmit(e);
+    const result = await handleSubmit(e, activeTab);
     return result; // Return the boolean result directly
   };
   
   // AIChecklistCreator expects Promise<void>
   const handleSubmitForAI = async (e: React.FormEvent): Promise<void> => {
-    await handleSubmit(e);
+    await handleSubmit(e, "ai");
     // No return value needed as the component expects void
   };
 
@@ -121,6 +127,12 @@ export default function CreateChecklist() {
               isSubmitting={isSubmitting}
               companies={companies}
               loadingCompanies={loadingCompanies}
+              aiPrompt={aiPrompt}
+              setAiPrompt={setAiPrompt}
+              numQuestions={numQuestions}
+              setNumQuestions={setNumQuestions}
+              openAIAssistant={openAIAssistant}
+              setOpenAIAssistant={setOpenAIAssistant}
             />
           </TabsContent>
           
