@@ -58,7 +58,17 @@ export function AICreateFormContent(props: AICreateFormProps) {
       setCompanyData(null);
       updateFormattedPrompt(null, props.form.category || "", description);
     }
-  }, [props.form.company_id, props.form.category, contextType, contextValue, description]);
+  }, [props.form.company_id]);
+
+  // Separate useEffect for updating prompt when other fields change
+  useEffect(() => {
+    updateFormattedPrompt(companyData, props.form.category || "", description);
+  }, [props.form.category, contextType, contextValue, description, companyData]);
+
+  // Update form description when description changes
+  useEffect(() => {
+    props.setForm(prev => ({ ...prev, description }));
+  }, [description]);
 
   const fetchCompanyData = async (companyId: string) => {
     try {
@@ -104,12 +114,6 @@ Contexto: ${context}`;
 
     setFormattedPrompt(prompt);
     props.setAiPrompt(prompt);
-
-    // Também atualiza a descrição no formulário
-    props.setForm({
-      ...props.form,
-      description: desc
-    });
   };
 
   const handleGenerateClick = () => {
