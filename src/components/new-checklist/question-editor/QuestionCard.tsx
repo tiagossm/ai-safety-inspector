@@ -157,37 +157,71 @@ export function QuestionCard({ question, onUpdate, onDelete, enableAllMedia = fa
           </div>
           
           {question.responseType === "multiple_choice" && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor={`question-options-${question.id}`}>Opções</Label>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowOptions(!showOptions)}
-                >
-                  {showOptions ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                </Button>
+            <div className="space-y-3">
+              <Label htmlFor={`question-options-${question.id}`}>Opções de Múltipla Escolha</Label>
+              
+              <div className="space-y-2">
+                {(question.options || []).map((option, index) => (
+                  <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+                    <Input
+                      value={option}
+                      onChange={(e) => {
+                        const newOptions = [...(question.options || [])];
+                        newOptions[index] = e.target.value;
+                        onUpdate({
+                          ...question,
+                          options: newOptions,
+                        });
+                      }}
+                      placeholder={`Opção ${index + 1}`}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const newOptions = [...(question.options || [])];
+                        newOptions.splice(index, 1);
+                        onUpdate({
+                          ...question,
+                          options: newOptions,
+                        });
+                      }}
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                
+                {(!question.options || question.options.length === 0) && (
+                  <div className="text-center py-4 text-muted-foreground">
+                    Nenhuma opção adicionada
+                  </div>
+                )}
               </div>
               
-              {showOptions && (
-                <>
-                  <Textarea
-                    id={`question-options-${question.id}`}
-                    value={optionsText}
-                    onChange={(e) => setOptionsText(e.target.value)}
-                    placeholder="Uma opção por linha"
-                    className="min-h-[100px]"
-                  />
-                  <Button onClick={handleOptionsSave} size="sm">
-                    Salvar Opções
-                  </Button>
-                </>
-              )}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const newOptions = [...(question.options || []), `Opção ${(question.options?.length || 0) + 1}`];
+                  onUpdate({
+                    ...question,
+                    options: newOptions,
+                  });
+                }}
+                className="w-full"
+              >
+                + Adicionar Opção
+              </Button>
               
-              <div className="text-sm text-muted-foreground">
+              <div className="text-xs text-muted-foreground">
                 {question.options && question.options.length > 0
-                  ? `${question.options.length} opções definidas`
-                  : "Nenhuma opção definida"}
+                  ? `${question.options.length} opção${question.options.length > 1 ? 'ões' : ''} definida${question.options.length > 1 ? 's' : ''}`
+                  : "Adicione pelo menos duas opções"}
               </div>
             </div>
           )}
