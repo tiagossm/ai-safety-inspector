@@ -39,33 +39,43 @@ serve(async (req) => {
       companyId,
       questionCount = 10,
       prompt,
-      assistantId 
+      assistantId,
+      checklistData 
     } = body;
 
+    // Se checklistData está presente, extrair categoria de lá
+    const effectiveCategory = category || checklistData?.category || "Geral";
+    const effectiveCompanyId = companyId || checklistData?.company_id;
+
+    console.log("Parâmetros extraídos:", {
+      title,
+      description,
+      category: effectiveCategory,
+      companyId: effectiveCompanyId,
+      questionCount,
+      prompt,
+      assistantId
+    });
+
     // Verificações de parâmetros
-    if (!prompt && !description) {
+    if (!prompt && !description && !checklistData?.description) {
       console.error("Descrição ou prompt são necessários");
       return errorResponse("Descrição ou prompt são necessários");
     }
     
-    if (!category) {
-      console.error("Categoria é obrigatória");
-      return errorResponse("Categoria é obrigatória");
-    }
-    
-    if (!companyId) {
-      console.error("ID da empresa é obrigatório");
-      return errorResponse("ID da empresa é obrigatório");
-    }
+    // Remover validação obrigatória do company_id pois pode ser opcional em alguns casos
 
     console.log("Verificando ID do Assistente OpenAI:", assistantId);
 
+    // Usar valores efetivos extraídos anteriormente
+    const finalPrompt = prompt || description || checklistData?.description;
+    
     // Parâmetros para a chamada da OpenAI
     const messages = [
       {
         role: "system",
         content: `Você é um assistente especializado em criar checklists de segurança do trabalho.
-        Seu objetivo é criar um checklist para a categoria: ${category}.
+        Seu objetivo é criar um checklist para a categoria: ${effectiveCategory}.
         O checklist deve ter aproximadamente ${questionCount} perguntas.
         Para cada pergunta, você deve incluir:
         1. O texto da pergunta
@@ -75,7 +85,7 @@ serve(async (req) => {
       },
       {
         role: "user",
-        content: prompt || `Crie um checklist para ${category} com a seguinte descrição: ${description}`
+        content: finalPrompt || `Crie um checklist para ${effectiveCategory} com a seguinte descrição: ${description || 'checklist geral'}`
       }
     ];
 
@@ -94,7 +104,7 @@ serve(async (req) => {
     
     if (assistantId && assistantId !== "default") {
       console.log("Usando abordagem baseada em threads com ID do Assistente:", assistantId);
-      response = await generateWithAssistant(assistantId, prompt || description, category, questionCount);
+      response = await generateWithAssistant(assistantId, finalPrompt, effectiveCategory, questionCount);
     } else {
       console.log("Usando API de completion padrão");
       // Chamada padrão da API
@@ -124,7 +134,7 @@ serve(async (req) => {
     }
     
     // Processa a resposta para estruturar os dados
-    const processedResponse = processResponse(response, title, description, category, companyId);
+    const processedResponse = processResponse(response, title, description, effectiveCategory, effectiveCompanyId);
     
     console.log("Resposta processada com sucesso");
     return addCorsHeaders(new Response(
@@ -243,7 +253,7 @@ async function generateWithAssistant(
   // Adicionar mensagem à thread
   const messageContent = `Por favor, crie um checklist para a categoria: ${category}. 
   O checklist deve ter aproximadamente ${questionCount} perguntas.
-  Detalhes adicionais: ${prompt}
+  Detalhes adicionais: ${prompt || 'Gerar checklist padrão'}
   
   Responda com um JSON contendo:
   1. title: título do checklist

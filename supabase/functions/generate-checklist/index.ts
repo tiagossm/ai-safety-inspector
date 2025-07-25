@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { ChatCompletionRequestMessageRoleEnum, Configuration, OpenAIApi } from "https://esm.sh/openai@3.2.1";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
 // Define CORS headers for browser access
 const corsHeaders = {
@@ -8,11 +8,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const openAiConfig = new Configuration({
-  apiKey: Deno.env.get("OPENAI_API_KEY")
-});
-
-const openai = new OpenAIApi(openAiConfig);
+const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
 async function generateWithAssistant(prompt: string, questionCount: number, assistantId: string | undefined) {
   try {
@@ -27,7 +23,8 @@ async function generateWithAssistant(prompt: string, questionCount: number, assi
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${Deno.env.get("OPENAI_API_KEY")}`
+            "Authorization": `Bearer ${OPENAI_API_KEY}`,
+            "OpenAI-Beta": "assistants=v2"
           }
         });
         
@@ -48,7 +45,8 @@ async function generateWithAssistant(prompt: string, questionCount: number, assi
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${Deno.env.get("OPENAI_API_KEY")}`
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        "OpenAI-Beta": "assistants=v2"
       },
       body: JSON.stringify({})
     });
@@ -68,7 +66,8 @@ async function generateWithAssistant(prompt: string, questionCount: number, assi
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${Deno.env.get("OPENAI_API_KEY")}`
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        "OpenAI-Beta": "assistants=v2"
       },
       body: JSON.stringify({
         role: "user",
@@ -87,7 +86,8 @@ async function generateWithAssistant(prompt: string, questionCount: number, assi
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${Deno.env.get("OPENAI_API_KEY")}`
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        "OpenAI-Beta": "assistants=v2"
       },
       body: JSON.stringify({
         assistant_id: assistantId,
@@ -140,7 +140,8 @@ The response must be in JSON format with the following structure:
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${Deno.env.get("OPENAI_API_KEY")}`
+          "Authorization": `Bearer ${OPENAI_API_KEY}`,
+          "OpenAI-Beta": "assistants=v2"
         }
       });
       
@@ -163,7 +164,8 @@ The response must be in JSON format with the following structure:
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${Deno.env.get("OPENAI_API_KEY")}`
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        "OpenAI-Beta": "assistants=v2"
       }
     });
     
@@ -242,12 +244,18 @@ async function generateWithOpenAI(prompt: string, questionCount: number): Promis
   try {
     console.log("Using OpenAI API directly as fallback");
     
-    const response = await openai.createChatCompletion({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: ChatCompletionRequestMessageRoleEnum.System,
-          content: `You are a checklist generation assistant. Create detailed, professional checklists for various purposes.
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `You are a checklist generation assistant. Create detailed, professional checklists for various purposes.
 Generate a checklist with ${questionCount} questions. The response must be in JSON format with the following structure:
 {
   "title": "Title of the checklist",
@@ -272,18 +280,26 @@ Generate a checklist with ${questionCount} questions. The response must be in JS
     }
   ]
 }`
-        },
-        {
-          role: ChatCompletionRequestMessageRoleEnum.User,
-          content: `Generate a checklist with the following requirements:\n\n${prompt}\n\nPlease generate exactly ${questionCount} questions.`
-        }
-      ],
-      temperature: 0.7,
-      max_tokens: 4000
+          },
+          {
+            role: "user",
+            content: `Generate a checklist with the following requirements:\n\n${prompt}\n\nPlease generate exactly ${questionCount} questions.`
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 4000
+      }),
     });
     
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`OpenAI API error: ${errorData.error?.message || 'Unknown error'}`);
+    }
+    
+    const apiResponse = await response.json();
+    
     // Extract the JSON from the response text
-    const responseText = response.data.choices[0]?.message?.content || "";
+    const responseText = apiResponse.choices[0]?.message?.content || "";
     const jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/) || 
                      responseText.match(/```([\s\S]*?)```/) ||
                      responseText.match(/{[\s\S]*}/);

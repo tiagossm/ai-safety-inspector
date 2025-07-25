@@ -23,11 +23,13 @@ export function useChecklistAISubmit() {
         assistantId: openAIAssistant
       });
       
-      const { data, error } = await supabase.functions.invoke('generate-checklist', {
+      const { data, error } = await supabase.functions.invoke('generate-checklist-v2', {
         body: {
           prompt: aiPrompt,
           checklistData: formData,
           questionCount: numQuestions || 10,
+          category: formData.category,
+          companyId: formData.company_id,
           ...assistantParam
         }
       });
