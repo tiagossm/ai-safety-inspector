@@ -9,6 +9,7 @@ import { useChecklistGroups } from "./useChecklistGroups";
 import { useChecklistSubmit } from "./useChecklistSubmit";
 import { handleError } from "@/utils/errorHandling";
 import { ChecklistGroup, ChecklistQuestion } from "@/types/newChecklist";
+import { v4 as uuidv4 } from "uuid";
 
 export function useChecklistEditorContext() {
   const navigate = useNavigate();
@@ -100,7 +101,7 @@ export function useChecklistEditorContext() {
           setGroups(checklist.groups);
         } else {
           const defaultGroup: ChecklistGroup = {
-            id: `group-${Date.now()}`,
+            id: uuidv4(),
             title: "Geral",
             order: 0
           };
@@ -108,7 +109,7 @@ export function useChecklistEditorContext() {
         }
       } else {
         const defaultGroup: ChecklistGroup = {
-          id: `group-${Date.now()}`,
+          id: uuidv4(),
           title: "Geral",
           order: 0
         };
@@ -151,7 +152,7 @@ export function useChecklistEditorContext() {
     });
     
     questions.forEach(question => {
-      const groupId = question.groupId || groups[0]?.id || `group-${Date.now()}`;
+      const groupId = question.groupId || groups[0]?.id || uuidv4();
       if (!result.has(groupId)) {
         result.set(groupId, []);
       }

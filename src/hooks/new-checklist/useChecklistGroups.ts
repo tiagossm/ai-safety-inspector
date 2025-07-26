@@ -2,6 +2,7 @@
 import { useCallback } from "react";
 import { toast } from "sonner";
 import { ChecklistGroup, ChecklistQuestion } from "@/types/newChecklist";
+import { v4 as uuidv4 } from "uuid";
 
 export function useChecklistGroups(
   groups: ChecklistGroup[],
@@ -11,7 +12,7 @@ export function useChecklistGroups(
 ) {
   const handleAddGroup = useCallback(() => {
     const newGroup: ChecklistGroup = {
-      id: `group-${Date.now()}`,
+      id: uuidv4(),
       title: "Novo Grupo",
       order: groups.length
     };

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
 import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
+import { v4 as uuidv4 } from "uuid";
 
 export function useLoadChecklistData() {
   const [loading, setLoading] = useState(true);
@@ -33,7 +34,7 @@ export function useLoadChecklistData() {
             return;
           }
 
-          const groupIdBase = `group-default-${Date.now()}`;
+          const groupIdBase = uuidv4();
           const questionGroups = groups.length > 0
             ? groups.map(group => ({
                 ...group,
@@ -82,7 +83,7 @@ export function useLoadChecklistData() {
 
         if (checklistQuery.checklist) {
           const checklist = checklistQuery.checklist;
-          const groupIdBase = `group-default-${Date.now()}`;
+          const groupIdBase = uuidv4();
           
           // Process groups and questions from the normalized checklist data
           const groups = checklistQuery.groups?.length

@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist";
 import { GroupedQuestionsSection } from "./create-forms/GroupedQuestionsSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { v4 as uuidv4 } from "uuid";
 
 const ALLOWED_RESPONSE_TYPES = ['sim/não', 'texto', 'seleção múltipla', 'numérico', 'foto', 'assinatura'];
 
@@ -144,7 +145,7 @@ export function ChecklistEditor({
   useEffect(() => {
     if (viewMode === "grouped" && groups.length === 0 && questions.length > 0) {
       const defaultGroup: QuestionGroup = {
-        id: `group-default-${Date.now()}`,
+        id: uuidv4(),
         title: "Geral",
         questions: [...questions]
       };

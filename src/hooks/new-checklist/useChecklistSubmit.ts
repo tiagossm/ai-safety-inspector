@@ -119,7 +119,7 @@ export function useChecklistSubmit(
 
         // Upsert groups
         const groupsData = groups.map(group => ({
-          id: group.id.startsWith('new-') ? undefined : group.id,
+          id: (group.id.startsWith('new-') || group.id.startsWith('group-')) ? undefined : group.id,
           checklist_id: checklistId,
           title: group.title,
           order: group.order

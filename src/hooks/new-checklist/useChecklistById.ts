@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { ChecklistWithStats, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
+import { v4 as uuidv4 } from "uuid";
 
 // Function to validate UUID format
 const isValidUUID = (id: string): boolean => {
@@ -169,7 +170,7 @@ export function useChecklistById(checklistId: string | undefined) {
 
         // Extract group information from questions or create default group
         const groupsMap = new Map();
-        const defaultGroupId = `group-${Date.now()}`;
+        const defaultGroupId = uuidv4();
         const defaultGroup = { id: defaultGroupId, title: "Geral", order: 0 };
         groupsMap.set(defaultGroupId, defaultGroup);
 
