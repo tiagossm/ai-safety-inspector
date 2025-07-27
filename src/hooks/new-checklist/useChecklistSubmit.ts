@@ -135,37 +135,90 @@ export function useChecklistSubmit(
         }
       }
 
-      // Prepare questions data
-      const questionsData = questions.map((question, index) => {
-        const questionData = {
-          id: question.id.startsWith('new-') ? undefined : question.id,
-          checklist_id: checklistId,
-          pergunta: question.text,
-          tipo_resposta: frontendToDatabaseResponseType(question.responseType),
-          obrigatorio: question.isRequired,
-          ordem: question.order || index,
-          opcoes: question.options && question.options.length > 0 ? JSON.stringify(question.options) : null,
-          weight: question.weight || 1,
-          permite_foto: question.allowsPhoto || false,
-          permite_video: question.allowsVideo || false,
-          permite_audio: question.allowsAudio || false,
-          permite_files: question.allowsFiles || false,
-          hint: question.hint || null
-        };
+      // Separate new questions from existing ones
+      const newQuestions = questions.filter(q => q.id.startsWith('new-'));
+      const existingQuestions = questions.filter(q => !q.id.startsWith('new-'));
 
-        console.log(`Preparando pergunta ${index + 1}:`, questionData);
-        return questionData;
-      });
+      console.log(`Processando ${newQuestions.length} novas perguntas e ${existingQuestions.length} perguntas existentes`);
 
-      // Save questions
-      const { error: questionsError } = await supabase
-        .from('checklist_itens')
-        .upsert(questionsData, { onConflict: 'id' });
+      // Process new questions (INSERT)
+      if (newQuestions.length > 0) {
+        const newQuestionsData = newQuestions.map((question, index) => {
+          // Validate question data
+          if (!question.text || !question.text.trim()) {
+            throw new Error(`Nova pergunta ${index + 1} não possui texto válido`);
+          }
 
-      if (questionsError) {
-        console.error('Erro ao salvar perguntas:', questionsError);
-        throw questionsError;
+          const questionData = {
+            checklist_id: checklistId,
+            pergunta: question.text.trim(),
+            tipo_resposta: frontendToDatabaseResponseType(question.responseType),
+            obrigatorio: question.isRequired,
+            ordem: question.order !== undefined ? question.order : index,
+            opcoes: question.options && question.options.length > 0 ? JSON.stringify(question.options) : null,
+            weight: question.weight || 1,
+            permite_foto: question.allowsPhoto || false,
+            permite_video: question.allowsVideo || false,
+            permite_audio: question.allowsAudio || false,
+            permite_files: question.allowsFiles || false,
+            hint: question.hint || null
+          };
+
+          console.log(`Inserindo nova pergunta ${index + 1}:`, questionData);
+          return questionData;
+        });
+
+        const { error: newQuestionsError } = await supabase
+          .from('checklist_itens')
+          .insert(newQuestionsData);
+
+        if (newQuestionsError) {
+          console.error('Erro ao inserir novas perguntas:', newQuestionsError);
+          throw newQuestionsError;
+        }
       }
+
+      // Process existing questions (UPDATE)
+      if (existingQuestions.length > 0) {
+        for (const question of existingQuestions) {
+          // Validate existing question ID
+          if (!question.id || question.id === 'undefined' || question.id.includes('undefined')) {
+            console.error('ID inválido detectado:', question.id, 'para pergunta:', question.text);
+            throw new Error(`Pergunta "${question.text}" possui ID inválido: ${question.id}`);
+          }
+
+          if (!question.text || !question.text.trim()) {
+            throw new Error(`Pergunta existente "${question.id}" não possui texto válido`);
+          }
+
+          const updateData = {
+            pergunta: question.text.trim(),
+            tipo_resposta: frontendToDatabaseResponseType(question.responseType),
+            obrigatorio: question.isRequired,
+            ordem: question.order,
+            opcoes: question.options && question.options.length > 0 ? JSON.stringify(question.options) : null,
+            weight: question.weight || 1,
+            permite_foto: question.allowsPhoto || false,
+            permite_video: question.allowsVideo || false,
+            permite_audio: question.allowsAudio || false,
+            permite_files: question.allowsFiles || false,
+            hint: question.hint || null
+          };
+
+          console.log(`Atualizando pergunta existente ${question.id}:`, updateData);
+
+          const { error: updateError } = await supabase
+            .from('checklist_itens')
+            .update(updateData)
+            .eq('id', question.id);
+
+          if (updateError) {
+            console.error(`Erro ao atualizar pergunta ${question.id}:`, updateError);
+            throw updateError;
+          }
+        }
+      }
+
 
       console.log('Checklist salvo com sucesso!');
       return true;
