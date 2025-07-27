@@ -65,7 +65,13 @@ export function MediaUploadInput({
   }, [readOnly]);
 
   const handleMediaUploaded = useCallback((urls: string[]) => {
-    if (urls.length > 0) onMediaChange([...mediaUrls, ...urls]);
+    if (urls.length > 0) {
+      // Evitar duplicatas ao adicionar novas mídias
+      const newUrls = urls.filter(url => !mediaUrls.includes(url));
+      if (newUrls.length > 0) {
+        onMediaChange([...mediaUrls, ...newUrls]);
+      }
+    }
   }, [mediaUrls, onMediaChange]);
 
   const handleDeleteMedia = useCallback((urlToDelete: string) => {

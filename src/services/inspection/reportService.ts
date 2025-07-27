@@ -504,9 +504,9 @@ async function fetchInspectionData(inspectionId: string) {
     .from('inspections')
     .select(`
       *,
-      company:company_id (fantasy_name, cnpj, cnae),
+      company:companies!company_id (fantasy_name, cnpj, cnae),
       responsible:responsible_id (name),
-      checklist:checklist_id (title, description)
+      checklist:checklists!checklist_id (title, description)
     `)
     .eq('id', inspectionId)
     .single();

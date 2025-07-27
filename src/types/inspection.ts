@@ -7,6 +7,13 @@ export const INSPECTION_STATUSES: Record<string, InspectionStatus> = {
   COMPLETED: 'Concluído'
 } as const;
 
+// Mapeamento para o banco de dados (minúsculo)
+export const INSPECTION_STATUSES_DB: Record<string, string> = {
+  PENDING: 'pendente',
+  IN_PROGRESS: 'em_andamento', 
+  COMPLETED: 'concluido'
+} as const;
+
 export interface Signature {
   inspection_id: string;
   signer_id: string;

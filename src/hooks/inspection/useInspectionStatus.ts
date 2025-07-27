@@ -2,7 +2,7 @@
 import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { INSPECTION_STATUSES } from "@/types/inspection";
+import { INSPECTION_STATUSES, INSPECTION_STATUSES_DB } from "@/types/inspection";
 
 export function useInspectionStatus(inspectionId: string | undefined) {
   // Mark inspection as completed
@@ -15,7 +15,7 @@ export function useInspectionStatus(inspectionId: string | undefined) {
     try {
       const { data, error } = await supabase
         .from("inspections")
-        .update({ status: INSPECTION_STATUSES.COMPLETED })
+        .update({ status: INSPECTION_STATUSES_DB.COMPLETED })
         .eq("id", inspectionId)
         .select("id, status, created_at, updated_at")
         .single();
@@ -41,7 +41,7 @@ export function useInspectionStatus(inspectionId: string | undefined) {
     try {
       const { data, error } = await supabase
         .from("inspections")
-        .update({ status: INSPECTION_STATUSES.IN_PROGRESS })
+        .update({ status: INSPECTION_STATUSES_DB.IN_PROGRESS })
         .eq("id", inspectionId)
         .select("id, status, created_at, updated_at")
         .single();
