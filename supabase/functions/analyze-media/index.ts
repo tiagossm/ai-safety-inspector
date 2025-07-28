@@ -4,6 +4,37 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type"
 };
 
+// Helper function for retry logic with exponential backoff
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<T> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      const isLastAttempt = attempt === maxRetries;
+      const isRateLimit = error.message?.includes('Rate limit');
+      
+      if (isLastAttempt || !isRateLimit) {
+        throw error;
+      }
+      
+      // Extract suggested delay from error message or use exponential backoff
+      let delay = baseDelay * Math.pow(2, attempt);
+      const retryAfterMatch = error.message?.match(/try again in (\d+)ms/);
+      if (retryAfterMatch) {
+        delay = parseInt(retryAfterMatch[1]) + 100; // Add small buffer
+      }
+      
+      console.log(`Rate limit hit, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries + 1})`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  throw new Error('Max retries exceeded');
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -125,33 +156,39 @@ Se não houver ação necessária, preencha "Nenhuma ação sugerida".
       ];
     }
 
-    // Chama a IA normalmente
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${openAIApiKey}`
-      },
-      body: JSON.stringify({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: "Você é um engenheiro especialista em SST (Saúde e Segurança do Trabalho), capaz de analisar imagens e sugerir planos de ação detalhados no formato 5W2H para riscos ou oportunidades identificadas."
-          },
-          {
-            role: "user",
-            content: analysisContent
-          }
-        ],
-        max_tokens: 1200
-      })
+    // Chama a IA com retry logic
+    const { data, analysisText } = await retryWithBackoff(async () => {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${openAIApiKey}`
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini", // Modelo mais eficiente para reduzir rate limits
+          messages: [
+            {
+              role: "system",
+              content: "Você é um engenheiro especialista em SST. Analise de forma concisa e objetiva, sugerindo planos 5W2H para riscos identificados."
+            },
+            {
+              role: "user",
+              content: analysisContent
+            }
+          ],
+          max_tokens: 800 // Reduzido para otimizar uso de tokens
+        })
+      });
+      
+      const data = await response.json();
+      if (!response.ok) {
+        const errorMsg = data.error?.message || "Unknown error";
+        throw new Error(`OpenAI API error: ${errorMsg}`);
+      }
+      
+      const analysisText = data.choices[0].message.content || "";
+      return { data, analysisText };
     });
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${data.error?.message || "Unknown error"}`);
-    }
-    const analysisText = data.choices[0].message.content || "";
 
     // Faz parsing dos campos
     const get = (label: string) => {

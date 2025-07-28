@@ -7,9 +7,11 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useMediaAnalysis, MediaAnalysisResult } from '@/hooks/useMediaAnalysis';
-import { Loader2, Sparkles } from 'lucide-react';
+import { MediaAnalysisResult } from '@/hooks/useMediaAnalysis';
+import { useSequentialMediaAnalysis } from '@/hooks/useSequentialMediaAnalysis';
+import { Loader2, Sparkles, AlertCircle, RefreshCw } from 'lucide-react';
 import ReactMarkdown from "react-markdown";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface MediaAnalysisDialogProps {
   open: boolean;
@@ -88,84 +90,24 @@ export function MediaAnalysisDialog({
     return [mediaUrl, ...filtered].slice(0, MAX_IMAGES);
   }, [mediaUrl, mediaUrls, additionalMediaUrls]);
 
-  const [analysisMap, setAnalysisMap] = useState<Record<string, AnalysisState>>({});
-  const { analyze } = useMediaAnalysis();
+  const { 
+    state, 
+    analyzeSequentially, 
+    retryFailedAnalysis, 
+    resetAnalysis,
+    isAnalyzing 
+  } = useSequentialMediaAnalysis();
 
   useEffect(() => {
-    if (open) {
-      let map: Record<string, AnalysisState> = {};
-      allImages.forEach(url => {
-        map[url] = { status: 'pending' };
-      });
-      setAnalysisMap(map);
-    } else {
-      setAnalysisMap({});
+    if (open && allImages.length > 0) {
+      resetAnalysis();
+      analyzeSequentially(allImages, questionText, userAnswer);
     }
-  }, [open, allImages]);
-  
-  useEffect(() => {
-    if (!open || allImages.length === 0) return;
-    
-    // Verificar se há imagens que precisam ser processadas
-    const imagesToProcess = allImages.filter(url => {
-      const state = analysisMap[url];
-      return !state || state.status === 'pending' || state.status === 'retry';
-    });
-
-    if (imagesToProcess.length === 0) return;
-    
-    const processImages = async () => {
-      for (const url of imagesToProcess) {
-        // Verificar novamente se a imagem ainda precisa ser processada
-        setAnalysisMap(prev => {
-          const currentState = prev[url];
-          if (!currentState || currentState.status === 'pending' || currentState.status === 'retry') {
-            return {
-              ...prev,
-              [url]: { ...currentState, status: 'processing' }
-            };
-          }
-          return prev;
-        });
-
-        try {
-          const result = await analyze({
-            mediaUrl: url,
-            mediaType,
-            questionText,
-            userAnswer,
-            multimodalAnalysis: false,
-            additionalMediaUrls: []
-          });
-          
-          setAnalysisMap(prev => ({
-            ...prev,
-            [url]: { status: 'done', result }
-          }));
-          
-          if (onAnalysisComplete && result) {
-            onAnalysisComplete(result);
-          }
-        } catch (err: any) {
-          setAnalysisMap(prev => ({
-            ...prev,
-            [url]: { status: 'error', errorMessage: `Erro ao analisar imagem: ${err.message}` }
-          }));
-        }
-      }
-    };
-
-    processImages();
-  }, [open, allImages.join(',')]); // Usar string join para evitar referência de array
+  }, [open, allImages, questionText, userAnswer, analyzeSequentially, resetAnalysis]);
 
   const handleRetry = (url: string) => {
-    setAnalysisMap(prev => ({
-      ...prev,
-      [url]: { status: 'retry' }
-    }));
+    retryFailedAnalysis(url, questionText, userAnswer);
   };
-
-  const isLoading = Object.values(analysisMap).some(state => state?.status === 'processing');
 
   const renderMarkdown = (md: string) =>
     <ReactMarkdown
@@ -205,18 +147,41 @@ export function MediaAnalysisDialog({
           </div>
         )}
 
-        {isLoading && (
-          <div className="flex flex-col items-center justify-center py-8">
+        {/* Indicador de progresso */}
+        {isAnalyzing && (
+          <div className="flex flex-col items-center justify-center py-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
-            <p className="text-sm text-gray-600">Analisando imagens...</p>
+            <p className="text-sm text-gray-600">
+              Processando imagem {state.completed.size + 1} de {allImages.length}...
+            </p>
+            {state.processing && (
+              <p className="text-xs text-gray-500 mt-1">
+                Analisando: {state.processing.substring(state.processing.lastIndexOf('/') + 1)}
+              </p>
+            )}
           </div>
+        )}
+
+        {/* Alertas de rate limit */}
+        {state.failed.size > 0 && Array.from(state.failed.values()).some(error => error.includes('Rate limit')) && (
+          <Alert className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Algumas análises falharam devido ao limite de requisições. Use o botão "Tentar novamente" abaixo.
+            </AlertDescription>
+          </Alert>
         )}
 
         {allImages.length > 0 && (
           <div className={`grid gap-4 ${allImages.length > 1 ? 'grid-cols-2 sm:grid-cols-4' : ''}`}>
             {allImages.map((url, idx) => {
-              const state = analysisMap[url];
-              const result = state?.result;
+              const isCompleted = state.completed.has(url);
+              const isFailed = state.failed.has(url);
+              const isProcessing = state.processing === url;
+              const isPending = state.pending.includes(url);
+              
+              const result = state.completed.get(url);
+              const errorMessage = state.failed.get(url);
               const actionSuggestion = result ? getSafeActionPlan(result) : "";
               const hasActionSuggestion = !!actionSuggestion && actionSuggestion.trim().length > 0;
 
@@ -230,19 +195,41 @@ export function MediaAnalysisDialog({
                   <p className="text-xs text-center mt-1 text-gray-500">
                     {idx === 0 ? 'Imagem principal' : `Imagem adicional ${idx}`}
                   </p>
-                  {state?.status === 'processing' && (
+                  
+                  {/* Status: Processando */}
+                  {isProcessing && (
                     <div className="flex flex-col items-center mt-3 mb-3">
                       <Loader2 className="h-5 w-5 animate-spin text-primary" />
                       <span className="text-xs mt-1 text-gray-600">Analisando...</span>
                     </div>
                   )}
-                  {state?.status === 'error' && (
-                    <div className="w-full border rounded-md p-2 bg-red-50 border-red-200 mt-1">
-                      <div className="text-xs text-red-700 mb-2">{state.errorMessage}</div>
-                      <Button size="sm" variant="secondary" onClick={() => handleRetry(url)}>Tentar novamente</Button>
+                  
+                  {/* Status: Pendente */}
+                  {isPending && !isProcessing && (
+                    <div className="flex flex-col items-center mt-3 mb-3">
+                      <div className="h-5 w-5 rounded-full border-2 border-gray-300 flex items-center justify-center">
+                        <span className="text-xs text-gray-500">{state.pending.indexOf(url) + 1}</span>
+                      </div>
+                      <span className="text-xs mt-1 text-gray-500">Na fila</span>
                     </div>
                   )}
-                  {state?.status === 'done' && result && (
+                  
+                  {/* Status: Erro */}
+                  {isFailed && (
+                    <div className="w-full border rounded-md p-2 bg-red-50 border-red-200 mt-1">
+                      <div className="text-xs text-red-700 mb-2 flex items-center">
+                        <AlertCircle className="h-3 w-3 mr-1" />
+                        {errorMessage}
+                      </div>
+                      <Button size="sm" variant="secondary" onClick={() => handleRetry(url)} className="flex items-center">
+                        <RefreshCw className="h-3 w-3 mr-1" />
+                        Tentar novamente
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {/* Status: Concluído */}
+                  {isCompleted && result && (
                     <>
                       {hasActionSuggestion && (
                         <div className="w-full my-2 p-2 rounded-md border text-center bg-amber-50 border-amber-200">
@@ -270,18 +257,13 @@ export function MediaAnalysisDialog({
                             {renderMarkdown(actionSuggestion)}
                           </div>
                           <Button
-  size="sm"
-  variant="destructive"
-  className="mt-2 w-full"
-  onClick={() => {
-    onAddActionPlan?.(actionSuggestion);
-  }}
->
-  Adicionar ao Plano de Ação
-</Button>
-
-
-
+                            size="sm"
+                            variant="destructive"
+                            className="mt-2 w-full"
+                            onClick={() => onAddActionPlan?.(actionSuggestion)}
+                          >
+                            Adicionar ao Plano de Ação
+                          </Button>
                         </div>
                       )}
                       {!hasActionSuggestion && (

@@ -26,6 +26,10 @@ export interface MediaAnalysisOptions {
 
 export function useMediaAnalysis() {
   const [analyzing, setAnalyzing] = useState(false);
+  const [requestQueue, setRequestQueue] = useState<Set<string>>(new Set());
+
+  // Debounce para evitar requests duplicados
+  const debounceTimeouts = new Map<string, NodeJS.Timeout>();
 
   const analyze = useCallback(async (options: MediaAnalysisOptions): Promise<MediaAnalysisResult | null> => {
     const { mediaUrl, questionText, userAnswer, multimodalAnalysis, additionalMediaUrls, mediaType } = options;
@@ -34,64 +38,136 @@ export function useMediaAnalysis() {
       toast.error("URL de mídia inválida para análise");
       return null;
     }
+
+    // Gerar chave única para deduplicação
+    const requestKey = `${mediaUrl}-${questionText}-${userAnswer}`;
     
-    setAnalyzing(true);
-    
-    try {
-      // Determinar o tipo de mídia
-      const detectedMediaType = mediaType || getMediaType(mediaUrl);
-      
-      // Construir o payload para a função Edge
-      const payload = {
-        mediaUrl,
-        questionText: questionText || "",
-        userAnswer: userAnswer || "",
-        questionId: "temp-id" // Placeholder já que a function espera esse campo
-      };
-      
-      console.log("Enviando análise de mídia com payload:", payload);
-      
-      // Chamar a função Edge para análise
-      const { data, error } = await supabase.functions.invoke('analyze-media', {
-        body: payload
-      });
-      
-      if (error) {
-        console.error("Erro na análise de mídia:", error);
-        toast.error(`Erro na análise: ${error.message}`);
-        return null;
-      }
-      
-      console.log("Resultado da análise:", data);
-      
-      // Verificar se o resultado tem a estrutura esperada
-      if (!data) {
-        toast.error("Resposta da análise de mídia vazia");
-        return null;
-      }
-      
-      // Formatar resultado
-      const result: MediaAnalysisResult = {
-        analysis: data.comment || "Sem análise disponível",
-        type: detectedMediaType,
-        analysisType: "5w2h",
-        actionPlanSuggestion: formatActionPlan(data.actionPlan),
-        hasNonConformity: hasActionPlanContent(data.actionPlan),
-        psychosocialRiskDetected: false,
-        questionText,
-        userAnswer,
-        confidence: 1
-      };
-      
-      return result;
-    } catch (error: any) {
-      console.error("Erro durante análise de mídia:", error);
-      toast.error(`Erro durante análise: ${error.message || "Erro desconhecido"}`);
+    // Verificar se já há uma requisição em andamento
+    if (requestQueue.has(requestKey)) {
+      console.log("Requisição já em andamento para esta mídia, ignorando...");
       return null;
-    } finally {
-      setAnalyzing(false);
     }
-  }, []);
+
+    // Cancelar timeout anterior se existir
+    if (debounceTimeouts.has(requestKey)) {
+      clearTimeout(debounceTimeouts.get(requestKey)!);
+    }
+
+    // Implementar debounce de 500ms
+    return new Promise((resolve) => {
+      const timeoutId = setTimeout(async () => {
+        debounceTimeouts.delete(requestKey);
+        
+        if (requestQueue.has(requestKey)) {
+          resolve(null);
+          return;
+        }
+
+        setRequestQueue(prev => new Set([...prev, requestKey]));
+        setAnalyzing(true);
+        
+        try {
+          // Determinar o tipo de mídia
+          const detectedMediaType = mediaType || getMediaType(mediaUrl);
+          
+          // Construir o payload para a função Edge
+          const payload = {
+            mediaUrl,
+            questionText: questionText || "",
+            userAnswer: userAnswer || "",
+            questionId: "temp-id"
+          };
+          
+          console.log("Enviando análise de mídia com payload:", payload);
+          
+          // Implementar retry com delay entre tentativas
+          let lastError: any = null;
+          const maxRetries = 3;
+          
+          for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+              // Adicionar delay entre tentativas para evitar rate limit
+              if (attempt > 0) {
+                const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+                console.log(`Tentativa ${attempt + 1}/${maxRetries + 1} após ${delay}ms`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+              }
+
+              const { data, error } = await supabase.functions.invoke('analyze-media', {
+                body: payload
+              });
+              
+              if (error) {
+                lastError = error;
+                
+                // Se for erro de rate limit, tenta novamente
+                if (error.message?.includes('Rate limit') && attempt < maxRetries) {
+                  console.log(`Rate limit detectado, tentando novamente...`);
+                  continue;
+                }
+                
+                throw error;
+              }
+              
+              console.log("Resultado da análise:", data);
+              
+              // Verificar se o resultado tem a estrutura esperada
+              if (!data) {
+                throw new Error("Resposta da análise de mídia vazia");
+              }
+              
+              // Formatar resultado
+              const result: MediaAnalysisResult = {
+                analysis: data.comment || "Sem análise disponível",
+                type: detectedMediaType,
+                analysisType: "5w2h",
+                actionPlanSuggestion: formatActionPlan(data.actionPlan),
+                hasNonConformity: hasActionPlanContent(data.actionPlan),
+                psychosocialRiskDetected: false,
+                questionText,
+                userAnswer,
+                confidence: 1
+              };
+              
+              resolve(result);
+              return;
+              
+            } catch (error: any) {
+              lastError = error;
+              
+              if (attempt === maxRetries) {
+                console.error("Erro durante análise de mídia após todas as tentativas:", error);
+                
+                // Mensagem de erro específica para rate limit
+                if (error.message?.includes('Rate limit')) {
+                  toast.error("Muitas análises simultâneas. Tente novamente em alguns segundos.");
+                } else {
+                  toast.error(`Erro durante análise: ${error.message || "Erro desconhecido"}`);
+                }
+                
+                resolve(null);
+                return;
+              }
+            }
+          }
+          
+        } catch (error: any) {
+          console.error("Erro durante análise de mídia:", error);
+          toast.error(`Erro durante análise: ${error.message || "Erro desconhecido"}`);
+          resolve(null);
+        } finally {
+          setAnalyzing(false);
+          setRequestQueue(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(requestKey);
+            return newSet;
+          });
+        }
+      }, 500); // Debounce de 500ms
+
+      debounceTimeouts.set(requestKey, timeoutId);
+    });
+  }, [requestQueue]);
   
   // Função auxiliar para determinar o tipo de mídia
   const getMediaType = (url: string): string => {
