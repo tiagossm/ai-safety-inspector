@@ -83,6 +83,26 @@ export function useOptimizedInspectionData(
     return inspectionData.error || autoSave.errorCount > 0;
   }, [inspectionData.error, autoSave.errorCount]);
 
+  // Funcionalidade "Continuar Inspeção" - verificar se há progresso salvo
+  const hasProgress = useMemo(() => {
+    if (!inspectionData.responses) return false;
+    return Object.keys(inspectionData.responses).length > 0;
+  }, [inspectionData.responses]);
+
+  // Funcionalidade "Atualizar Dados" - recarregar dados da inspeção
+  const updateInspectionData = useCallback(async () => {
+    await inspectionData.refreshData();
+    // Refresh metrics after data update
+    return Promise.resolve();
+  }, [inspectionData.refreshData]);
+
+  // Verificar se a inspeção está editável
+  const isEditable = useMemo(() => {
+    if (!inspectionData.inspection) return false;
+    const status = inspectionData.inspection.status?.toLowerCase();
+    return ['pendente', 'em andamento', 'pending', 'in_progress', 'aberto'].includes(status);
+  }, [inspectionData.inspection]);
+
   return {
     // Basic inspection data
     ...inspectionData,
@@ -94,6 +114,7 @@ export function useOptimizedInspectionData(
     handleMediaUpload,
     handleMediaChange,
     handleSaveInspection,
+    updateInspectionData,
     
     // Optimized features
     getFilteredQuestions,
@@ -107,6 +128,8 @@ export function useOptimizedInspectionData(
     // Enhanced state
     savingResponses: savingResponses || autoSave.isSaving,
     hasErrors,
+    hasProgress,
+    isEditable,
     
     // Utility functions
     refreshData: inspectionData.refreshData

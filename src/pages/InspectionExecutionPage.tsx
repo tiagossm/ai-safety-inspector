@@ -46,7 +46,10 @@ export default function InspectionExecutionPage() {
     handleMediaChange,
     savingResponses,
     autoSave,
-    metrics
+    metrics,
+    hasProgress,
+    isEditable,
+    updateInspectionData
   } = useOptimizedInspectionData(id, {
     autoSaveEnabled: true,
     autoSaveInterval: 30,

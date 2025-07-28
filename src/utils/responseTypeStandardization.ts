@@ -4,6 +4,8 @@ import { databaseToFrontendResponseType } from "./responseTypeMap";
 export interface StandardizedResponse {
   value: any;
   mediaUrls: string[];
+  audioUrls?: string[];
+  fileUrls?: string[];
   mediaAnalysisResults?: Record<string, any>;
   actionPlan?: string | any;
   comments?: string;
@@ -37,6 +39,8 @@ export function standardizeResponse(response: any): StandardizedResponse {
     return {
       value: null,
       mediaUrls: [],
+      audioUrls: [],
+      fileUrls: [],
       mediaAnalysisResults: {},
       actionPlan: null,
       comments: null,
@@ -49,6 +53,8 @@ export function standardizeResponse(response: any): StandardizedResponse {
     return {
       value: response,
       mediaUrls: [],
+      audioUrls: [],
+      fileUrls: [],
       mediaAnalysisResults: {},
       actionPlan: null,
       comments: null,
@@ -59,6 +65,8 @@ export function standardizeResponse(response: any): StandardizedResponse {
   return {
     value: response.value ?? null,
     mediaUrls: Array.isArray(response.mediaUrls) ? response.mediaUrls : [],
+    audioUrls: Array.isArray(response.audioUrls) ? response.audioUrls : [],
+    fileUrls: Array.isArray(response.fileUrls) ? response.fileUrls : [],
     mediaAnalysisResults: response.mediaAnalysisResults || {},
     actionPlan: response.actionPlan || null,
     comments: response.comments || null,
