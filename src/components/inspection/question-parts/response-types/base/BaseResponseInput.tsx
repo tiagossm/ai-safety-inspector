@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from "react";
 import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
-import { MediaAttachments } from "@/components/inspection/question-inputs/MediaAttachments";
 import { ActionPlanButton } from "../components/ActionPlanButton";
 import { MediaAnalysisButton } from "../components/MediaAnalysisButton";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
@@ -131,7 +130,7 @@ export function BaseResponseInput({
           </div>
         )}
 
-        {/* Upload de mídia */}
+        {/* Upload e anexos de mídia centralizados */}
         {showMediaUpload && hasMediaSupport && (
           <MediaUploadInput
             mediaUrls={mediaUrls}
@@ -144,22 +143,6 @@ export function BaseResponseInput({
             questionText={standardQuestion.pergunta}
             onSaveAnalysis={handleSaveAnalysis}
             analysisResults={mediaAnalysisResults}
-            onApplyAISuggestion={onApplyAISuggestion}
-          />
-        )}
-
-
-        {/* Anexos de mídia */}
-        {mediaUrls.length > 0 && (
-          <MediaAttachments
-            mediaUrls={mediaUrls}
-            onDelete={!readOnly ? handleDeleteMedia : undefined}
-            onOpenPreview={handleOpenPreview}
-            onOpenAnalysis={handleOpenMediaAnalysis}
-            readOnly={readOnly}
-            questionText={standardQuestion.pergunta}
-            analysisResults={mediaAnalysisResults}
-            onSaveAnalysis={handleSaveAnalysis}
             onApplyAISuggestion={onApplyAISuggestion}
           />
         )}

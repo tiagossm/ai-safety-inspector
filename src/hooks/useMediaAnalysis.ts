@@ -31,7 +31,7 @@ export function useMediaAnalysis() {
   // Debounce para evitar requests duplicados
   const debounceTimeouts = new Map<string, NodeJS.Timeout>();
 
-  const analyze = useCallback(async (options: MediaAnalysisOptions): Promise<MediaAnalysisResult | null> => {
+  const analyze = useCallback(async (options: MediaAnalysisOptions): Promise<any | null> => {
     const { mediaUrl, questionText, userAnswer, multimodalAnalysis, additionalMediaUrls, mediaType } = options;
     
     if (!mediaUrl) {
@@ -116,17 +116,12 @@ export function useMediaAnalysis() {
                 throw new Error("Resposta da análise de mídia vazia");
               }
               
-              // Formatar resultado
-              const result: MediaAnalysisResult = {
-                analysis: data.comment || "Sem análise disponível",
+              // Retornar resultado direto do edge function
+              const result = {
+                ...data, // { comment, actionPlan, raw }
                 type: detectedMediaType,
-                analysisType: "5w2h",
-                actionPlanSuggestion: formatActionPlan(data.actionPlan),
-                hasNonConformity: hasActionPlanContent(data.actionPlan),
-                psychosocialRiskDetected: false,
                 questionText,
-                userAnswer,
-                confidence: 1
+                userAnswer
               };
               
               resolve(result);

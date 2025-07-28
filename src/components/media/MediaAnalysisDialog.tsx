@@ -48,14 +48,30 @@ function forceListMarkdown(text: string): string {
     .join('\n');
 }
 
-// Fallback para extrair ações corretivas do texto da análise
-function getSafeActionPlan(result: MediaAnalysisResult): string {
+// Fallback para extrair ações corretivas do resultado do edge function
+function getSafeActionPlan(result: any): string {
   console.log("[getSafeActionPlan] result recebido:", result);
-  const isInvalid = !result.actionPlanSuggestion 
-    || result.actionPlanSuggestion.trim() === "" 
-    || result.actionPlanSuggestion.trim().toLowerCase() === "sugeridas:**";
+  
+  // Resultado do edge function tem formato { comment, actionPlan, raw }
+  if (result.actionPlan) {
+    // Formatando o 5W2H do actionPlan
+    const plan = result.actionPlan;
+    const lines = [];
+    if (plan.what) lines.push(`- **O quê (What):** ${plan.what}`);
+    if (plan.why) lines.push(`- **Por quê (Why):** ${plan.why}`);
+    if (plan.who) lines.push(`- **Quem (Who):** ${plan.who}`);
+    if (plan.when) lines.push(`- **Quando (When):** ${plan.when}`);
+    if (plan.where) lines.push(`- **Onde (Where):** ${plan.where}`);
+    if (plan.how) lines.push(`- **Como (How):** ${plan.how}`);
+    
+    return lines.length > 0 ? lines.join('\n') : "";
+  }
 
-  if (!isInvalid) return result.actionPlanSuggestion!;
+  // Se for MediaAnalysisResult (formato antigo), usar o actionPlanSuggestion
+  if (result.actionPlanSuggestion && result.actionPlanSuggestion.trim() !== "" && 
+      result.actionPlanSuggestion.trim().toLowerCase() !== "sugeridas:**") {
+    return result.actionPlanSuggestion;
+  }
   
   // Procura seção "Ações? Corretivas Sugeridas:" ou similar no texto da análise
   if (result.analysis) {
@@ -241,12 +257,12 @@ export function MediaAnalysisDialog({
                           </div>
                         </div>
                       )}
-                      <div className="w-full border rounded-md p-2 bg-gray-50 mb-1">
-                        <h3 className="text-xs font-medium text-gray-700 mb-1">Análise da Imagem:</h3>
-                        <div className="text-xs whitespace-pre-line">
-                          {renderMarkdown(result.analysis ?? "")}
-                        </div>
-                      </div>
+                        <div className="w-full border rounded-md p-2 bg-gray-50 mb-1">
+                         <h3 className="text-xs font-medium text-gray-700 mb-1">Análise da Imagem:</h3>
+                         <div className="text-xs whitespace-pre-line">
+                           {renderMarkdown((result as any).comment || result.analysis || "")}
+                         </div>
+                       </div>
                       {hasActionSuggestion && (
                         <div className="w-full border rounded-md p-2 bg-amber-50 border-amber-200 mt-1">
                           <div className="flex items-center mb-1">
