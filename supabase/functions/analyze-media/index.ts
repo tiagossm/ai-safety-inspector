@@ -16,8 +16,9 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
+    
     // Recebe parâmetros
-    const { mediaUrl, questionText, userAnswer = "", questionId } = await req.json();
+    const { mediaUrl, questionText, userAnswer = "", questionId, mediaType } = await req.json();
     if (!mediaUrl) {
       return new Response(JSON.stringify({ error: "Missing media URL" }), {
         status: 400,
@@ -25,8 +26,25 @@ serve(async (req) => {
       });
     }
 
-    // Prompt 5W2H: análise crítica, sem julgar conformidade!
-    const userPrompt = `
+    // Verificar se é mídia suportada
+    const isImage = mediaUrl.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i);
+    const isVideo = mediaUrl.match(/\.(mp4|webm|mov|avi)$/i);
+    const isAudio = mediaUrl.match(/\.(mp3|wav|ogg|m4a|webm)$/i);
+    const isDocument = mediaUrl.match(/\.(pdf|doc|docx)$/i);
+
+    if (!isImage && !isVideo && !isAudio && !isDocument) {
+      return new Response(JSON.stringify({ error: "Unsupported media type" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // Prompt adaptado para diferentes tipos de mídia
+    let userPrompt = "";
+    let analysisContent = [];
+
+    if (isImage) {
+      userPrompt = `
 Você receberá uma imagem, uma pergunta de inspeção e a resposta do usuário.
 
 Pergunta: "${questionText}"
@@ -34,8 +52,7 @@ Resposta do usuário: "${userAnswer}"
 
 Seu trabalho é:
 1. Analisar a imagem e descrever o contexto, o ambiente ou sinais visuais que se relacionam com a pergunta e a resposta.
-2. Se identificar oportunidades de melhoria, risco, sintoma, ou não conformidade, sugira um plano de ação no formato **5W2H** (O quê, Por quê, Quem, Quando, Onde, Como).  
-- "Quanto custa" deve ser deixado em aberto para preenchimento posterior.
+2. Se identificar oportunidades de melhoria, risco, sintoma, ou não conformidade, sugira um plano de ação no formato **5W2H**.
 3. Caso não haja ação necessária, responda "Nenhuma ação sugerida".
 
 **Responda exatamente neste formato, em português:**
@@ -52,23 +69,61 @@ Plano de Ação (5W2H):
 - Como (How):
 - Quanto custa (How much): 
 
-Se não houver ação sugerida, preencha o campo “Plano de Ação” com “Nenhuma ação sugerida”.
+NUNCA preencha o campo "Quanto custa" (How much) — deixe em branco.
+      `.trim();
 
-Exemplo:
+      analysisContent = [
+        {
+          type: "text",
+          text: userPrompt
+        },
+        {
+          type: "image_url",
+          image_url: {
+            url: mediaUrl
+          }
+        }
+      ];
+    } else {
+      // Para áudio, vídeo ou documentos
+      let mediaTypeText = "";
+      if (isVideo) mediaTypeText = "vídeo";
+      else if (isAudio) mediaTypeText = "áudio"; 
+      else if (isDocument) mediaTypeText = "documento";
+
+      userPrompt = `
+Você receberá um arquivo de ${mediaTypeText} relacionado a uma pergunta de inspeção.
+
+Pergunta: "${questionText}"
+Resposta do usuário: "${userAnswer}"
+URL do arquivo: ${mediaUrl}
+
+Como não posso processar diretamente ${mediaTypeText}, baseie-se na pergunta e resposta para sugerir uma análise geral e plano de ação se necessário.
+
+**Responda exatamente neste formato, em português:**
+
 Comentário:
-A imagem mostra um colaborador aparentemente tenso, de acordo com a resposta "Sim".
+(Análise baseada na pergunta e resposta fornecidas.)
 
 Plano de Ação (5W2H):
-- O quê (What): Incentivar técnicas de respiração.
-- Por quê (Why): Reduzir o nervosismo relatado.
-- Quem (Who): Próprio colaborador.
-- Quando (When): Imediatamente.
-- Onde (Where): Local de trabalho.
-- Como (How): Realizar pausas para exercícios respiratórios guiados.
+- O quê (What):
+- Por quê (Why):
+- Quem (Who):
+- Quando (When):
+- Onde (Where):
+- Como (How):
 - Quanto custa (How much): 
 
-NUNCA preencha o campo "Quanto custa" (How much) — deixe em branco.
-    `.trim();
+Se não houver ação necessária, preencha "Nenhuma ação sugerida".
+      `.trim();
+
+      analysisContent = [
+        {
+          type: "text",
+          text: userPrompt
+        }
+      ];
+    }
 
     // Chama a IA normalmente
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -86,18 +141,7 @@ NUNCA preencha o campo "Quanto custa" (How much) — deixe em branco.
           },
           {
             role: "user",
-            content: [
-              {
-                type: "text",
-                text: userPrompt
-              },
-              {
-                type: "image_url",
-                image_url: {
-                  url: mediaUrl
-                }
-              }
-            ]
+            content: analysisContent
           }
         ],
         max_tokens: 1200

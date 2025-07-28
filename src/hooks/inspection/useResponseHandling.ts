@@ -19,22 +19,34 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
       
       // Se data é um objeto, spread suas propriedades para a resposta atual
       // Se não, assume que é um valor simples para o campo value
-      const updatedResponse = typeof data === 'object' && data !== null
-        ? { ...currentResponse, ...data, updatedAt: new Date().toISOString() }
-        : { ...currentResponse, value: data, updatedAt: new Date().toISOString() };
+      let updatedResponse;
+      if (typeof data === 'object' && data !== null) {
+        // Evitar referência circular ao fazer shallow copy dos dados
+        const cleanData = { ...data };
+        if (cleanData.value && typeof cleanData.value === 'object') {
+          cleanData.value = { ...cleanData.value };
+        }
+        updatedResponse = { ...currentResponse, ...cleanData, updatedAt: new Date().toISOString() };
+      } else {
+        updatedResponse = { ...currentResponse, value: data, updatedAt: new Date().toISOString() };
+      }
       
-      // Garantir que mediaUrls seja sempre um array
+      // Garantir que mediaUrls seja sempre um array único (evitar duplicatas)
       if (updatedResponse.mediaUrls) {
-        updatedResponse.mediaUrls = [...updatedResponse.mediaUrls];
+        updatedResponse.mediaUrls = [...new Set(updatedResponse.mediaUrls)];
       } else if (data && data.mediaUrls) {
-        updatedResponse.mediaUrls = [...data.mediaUrls];
+        updatedResponse.mediaUrls = [...new Set(data.mediaUrls)];
       } else if (!updatedResponse.mediaUrls) {
         updatedResponse.mediaUrls = [];
       }
       
-      // Console log para debugging
+      // Console log para debugging sem referência circular
       console.log(`[useResponseHandling] Atualizando resposta para questão ${questionId}:`, 
-        { anterior: currentResponse, nova: updatedResponse });
+        { 
+          anterior: Object.keys(currentResponse), 
+          nova: Object.keys(updatedResponse),
+          mediaUrls: updatedResponse.mediaUrls.length
+        });
       
       // Retornar um novo objeto de respostas com a resposta atualizada
       return {

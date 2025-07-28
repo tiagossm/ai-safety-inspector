@@ -46,9 +46,7 @@ export function useMediaAnalysis() {
         mediaUrl,
         questionText: questionText || "",
         userAnswer: userAnswer || "",
-        mediaType: detectedMediaType,
-        multimodalAnalysis: multimodalAnalysis || false,
-        additionalMediaUrls: additionalMediaUrls || []
+        questionId: "temp-id" // Placeholder já que a function espera esse campo
       };
       
       console.log("Enviando análise de mídia com payload:", payload);
@@ -74,15 +72,15 @@ export function useMediaAnalysis() {
       
       // Formatar resultado
       const result: MediaAnalysisResult = {
-        analysis: data.analysis || data.transcript || "Sem análise disponível",
+        analysis: data.comment || "Sem análise disponível",
         type: detectedMediaType,
-        analysisType: data.analysisType || "general",
-        actionPlanSuggestion: data.actionPlanSuggestion || null,
-        hasNonConformity: data.hasNonConformity || false,
-        psychosocialRiskDetected: data.psychosocialRiskDetected || false,
+        analysisType: "5w2h",
+        actionPlanSuggestion: formatActionPlan(data.actionPlan),
+        hasNonConformity: hasActionPlanContent(data.actionPlan),
+        psychosocialRiskDetected: false,
         questionText,
         userAnswer,
-        confidence: data.confidence || 0
+        confidence: 1
       };
       
       return result;
@@ -112,6 +110,28 @@ export function useMediaAnalysis() {
     }
     
     return 'unknown';
+  };
+
+  // Função para verificar se há conteúdo no plano de ação
+  const hasActionPlanContent = (actionPlan: any) => {
+    if (!actionPlan) return false;
+    return actionPlan.what || actionPlan.why || actionPlan.who || actionPlan.when || actionPlan.where || actionPlan.how;
+  };
+
+  // Função para formatar o plano de ação em texto
+  const formatActionPlan = (actionPlan: any) => {
+    if (!actionPlan || !hasActionPlanContent(actionPlan)) return null;
+    
+    let formatted = "Plano de Ação 5W2H:\n\n";
+    if (actionPlan.what) formatted += `**O quê (What):** ${actionPlan.what}\n`;
+    if (actionPlan.why) formatted += `**Por quê (Why):** ${actionPlan.why}\n`;
+    if (actionPlan.who) formatted += `**Quem (Who):** ${actionPlan.who}\n`;
+    if (actionPlan.when) formatted += `**Quando (When):** ${actionPlan.when}\n`;
+    if (actionPlan.where) formatted += `**Onde (Where):** ${actionPlan.where}\n`;
+    if (actionPlan.how) formatted += `**Como (How):** ${actionPlan.how}\n`;
+    formatted += `**Quanto custa (How much):** [A ser preenchido]\n`;
+    
+    return formatted.trim();
   };
 
   return {

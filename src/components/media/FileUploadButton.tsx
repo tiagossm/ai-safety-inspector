@@ -28,6 +28,36 @@ export function FileUploadButton({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile } = useMediaUpload();
   
+  const validateVideoFile = (file: File): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if (!file.type.startsWith('video/')) {
+        resolve(true); // Não é vídeo, passa na validação
+        return;
+      }
+
+      const video = document.createElement('video');
+      const url = URL.createObjectURL(file);
+      
+      video.addEventListener('loadedmetadata', () => {
+        URL.revokeObjectURL(url);
+        if (video.duration > 15) {
+          toast.error('Vídeos devem ter no máximo 15 segundos de duração');
+          resolve(false);
+        } else {
+          resolve(true);
+        }
+      });
+
+      video.addEventListener('error', () => {
+        URL.revokeObjectURL(url);
+        toast.error('Erro ao validar arquivo de vídeo');
+        resolve(false);
+      });
+
+      video.src = url;
+    });
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     
@@ -36,6 +66,15 @@ export function FileUploadButton({
     try {
       setIsUploading(true);
       if (onUploadStart) onUploadStart();
+
+      // Validar vídeo se necessário
+      const isValidFile = await validateVideoFile(file);
+      if (!isValidFile) {
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        return;
+      }
       
       const result = await uploadFile(file);
       

@@ -61,7 +61,7 @@ export function MediaCaptureButton({
       setRecordingTime(prevTime => prevTime + 1);
       
       // Auto-stop long recordings
-      if (type === 'video' && recordingTime >= 30) { // 30 seconds max for video
+      if (type === 'video' && recordingTime >= 15) { // 15 seconds max for video
         stopRecording();
       } else if (type === 'audio' && recordingTime >= 90) { // 90 seconds max for audio
         stopRecording();
@@ -201,6 +201,12 @@ export function MediaCaptureButton({
   
   const uploadRecording = async () => {
     if (recordedChunks.length === 0) return;
+    
+    // Validação de tempo mínimo para vídeo
+    if (type === 'video' && recordingTime < 1) {
+      toast.error('Vídeo deve ter pelo menos 1 segundo de duração');
+      return;
+    }
     
     try {
       const mimeType = type === 'audio' ? 'audio/webm' : 'video/webm';
