@@ -1,8 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
 import { MediaAttachments } from "@/components/inspection/question-inputs/MediaAttachments";
-import { AudioRecorderInput } from "@/components/inspection/question-inputs/AudioRecorderInput";
-import { FileUploadInput } from "@/components/inspection/question-inputs/FileUploadInput";
 import { ActionPlanButton } from "../components/ActionPlanButton";
 import { MediaAnalysisButton } from "../components/MediaAnalysisButton";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
@@ -150,41 +148,6 @@ export function BaseResponseInput({
           />
         )}
 
-        {/* Gravação de áudio dedicada */}
-        {standardQuestion.allowsAudio && (
-          <div className="mt-3">
-            <h5 className="text-sm font-medium mb-2 text-gray-700">Gravação de Áudio</h5>
-            <AudioRecorderInput
-              value={standardResponse.audioUrls || []}
-              onChange={(audioUrls) => {
-                // Manter separadas as URLs de áudio das outras mídias
-                handleMediaChange([...mediaUrls.filter(url => !url.includes('audio')), ...audioUrls]);
-              }}
-              maxRecordings={3}
-              maxDurationMs={300000}
-              readOnly={readOnly}
-            />
-          </div>
-        )}
-
-        {/* Upload de arquivos dedicado */}
-        {standardQuestion.allowsFiles && (
-          <div className="mt-3">
-            <h5 className="text-sm font-medium mb-2 text-gray-700">Anexar Arquivos</h5>
-            <FileUploadInput
-              value={standardResponse.fileUrls || []}
-              onChange={(fileUrls) => {
-                // Manter separadas as URLs de arquivo das outras mídias
-                handleMediaChange([...mediaUrls.filter(url => !url.includes('inspection-files')), ...fileUrls]);
-              }}
-              maxFiles={5}
-              maxSizeMB={10}
-              inspectionId={inspectionId}
-              questionId={standardQuestion.id}
-              readOnly={readOnly}
-            />
-          </div>
-        )}
 
         {/* Anexos de mídia */}
         {mediaUrls.length > 0 && (

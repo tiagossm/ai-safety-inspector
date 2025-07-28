@@ -106,45 +106,57 @@ export function MediaAnalysisDialog({
   useEffect(() => {
     if (!open || allImages.length === 0) return;
     
+    // Verificar se há imagens que precisam ser processadas
+    const imagesToProcess = allImages.filter(url => {
+      const state = analysisMap[url];
+      return !state || state.status === 'pending' || state.status === 'retry';
+    });
+
+    if (imagesToProcess.length === 0) return;
+    
     const processImages = async () => {
-      for (const url of allImages) {
-        const state = analysisMap[url];
-        if (!state || state.status === 'pending' || state.status === 'retry') {
+      for (const url of imagesToProcess) {
+        // Verificar novamente se a imagem ainda precisa ser processada
+        setAnalysisMap(prev => {
+          const currentState = prev[url];
+          if (!currentState || currentState.status === 'pending' || currentState.status === 'retry') {
+            return {
+              ...prev,
+              [url]: { ...currentState, status: 'processing' }
+            };
+          }
+          return prev;
+        });
+
+        try {
+          const result = await analyze({
+            mediaUrl: url,
+            mediaType,
+            questionText,
+            userAnswer,
+            multimodalAnalysis: false,
+            additionalMediaUrls: []
+          });
+          
           setAnalysisMap(prev => ({
             ...prev,
-            [url]: { ...prev[url], status: 'processing' }
+            [url]: { status: 'done', result }
           }));
-
-          try {
-            const result = await analyze({
-              mediaUrl: url,
-              mediaType,
-              questionText,
-              userAnswer,
-              multimodalAnalysis: false,
-              additionalMediaUrls: []
-            });
-            
-            setAnalysisMap(prev => ({
-              ...prev,
-              [url]: { status: 'done', result }
-            }));
-            
-            if (onAnalysisComplete && result) {
-              onAnalysisComplete(result);
-            }
-          } catch (err: any) {
-            setAnalysisMap(prev => ({
-              ...prev,
-              [url]: { status: 'error', errorMessage: `Erro ao analisar imagem: ${err.message}` }
-            }));
+          
+          if (onAnalysisComplete && result) {
+            onAnalysisComplete(result);
           }
+        } catch (err: any) {
+          setAnalysisMap(prev => ({
+            ...prev,
+            [url]: { status: 'error', errorMessage: `Erro ao analisar imagem: ${err.message}` }
+          }));
         }
       }
     };
 
     processImages();
-  }, [open, allImages.length]); // Removidas dependências que mudam constantemente
+  }, [open, allImages.join(',')]); // Usar string join para evitar referência de array
 
   const handleRetry = (url: string) => {
     setAnalysisMap(prev => ({
