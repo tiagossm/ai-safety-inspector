@@ -17,30 +17,39 @@ export const STANDARD_RESPONSE_TYPES = [
 
 export function frontendToDatabaseResponseType(frontendType: string): string {
   const typeMap: Record<string, string> = {
-    'yes_no': 'sim/não',
-    'text': 'texto',
-    'paragraph': 'texto',
-    'numeric': 'numérico',
-    'dropdown': 'seleção múltipla',
-    'multiple_choice': 'seleção múltipla',
-    'multiple_select': 'seleção múltipla',
+    'yes_no': 'yes_no',
+    'text': 'text',
+    'paragraph': 'paragraph',
+    'numeric': 'numeric',
+    'dropdown': 'dropdown',
+    'multiple_choice': 'multiple_choice',
+    'multiple_select': 'multiple_select',
     'date': 'date',
     'time': 'time',
     'datetime': 'datetime'
   };
 
-  return typeMap[frontendType] || 'sim/não';
+  return typeMap[frontendType] || 'yes_no';
 }
 
 export function databaseToFrontendResponseType(dbType: string): string {
   const typeMap: Record<string, string> = {
-    'sim/não': 'yes_no',
-    'texto': 'text',
-    'numérico': 'numeric',
-    'seleção múltipla': 'multiple_choice',
+    'yes_no': 'yes_no',
+    'text': 'text',
+    'paragraph': 'paragraph', 
+    'numeric': 'numeric',
+    'dropdown': 'dropdown',
+    'multiple_choice': 'multiple_choice',
+    'multiple_select': 'multiple_select',
     'date': 'date',
     'time': 'time',
-    'datetime': 'datetime'
+    'datetime': 'datetime',
+    // Mapeamentos para compatibilidade com dados antigos
+    'sim/não': 'yes_no',
+    'texto': 'text',
+    'parágrafo': 'paragraph',
+    'numérico': 'numeric',
+    'seleção múltipla': 'multiple_choice'
   };
 
   return typeMap[dbType] || 'yes_no';
