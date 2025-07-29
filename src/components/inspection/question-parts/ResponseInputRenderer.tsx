@@ -1,5 +1,5 @@
 import React from "react";
-import { YesNoResponseInput } from "./response-types/YesNoResponseInput";
+import { StandardizedYesNoResponseInput } from "./response-types/StandardizedYesNoResponseInput";
 import { StandardizedTextResponseInput } from "./response-types/StandardizedTextResponseInput";
 import { StandardizedDateResponseInput } from "./response-types/StandardizedDateResponseInput";
 import { StandardizedTimeResponseInput } from "./response-types/StandardizedTimeResponseInput";
@@ -54,7 +54,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   };
 
   if (responseType === "yes_no") {
-    return <YesNoResponseInput {...commonProps} />;
+    return <StandardizedYesNoResponseInput {...commonProps} />;
   }
 
   if (responseType === "text") {

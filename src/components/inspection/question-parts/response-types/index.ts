@@ -1,4 +1,4 @@
-export * from './YesNoResponseInput';
+export * from './StandardizedYesNoResponseInput';
 export * from './ActionPlanDisplay';
 export * from './components/ResponseButtonGroup';
 export * from './components/MediaAnalysisButton';
