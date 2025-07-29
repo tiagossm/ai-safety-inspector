@@ -9,7 +9,10 @@ import { StandardizedParagraphResponseInput } from "./response-types/Standardize
 import { StandardizedDropdownResponseInput } from "./response-types/StandardizedDropdownResponseInput";
 import { StandardizedMultipleSelectResponseInput } from "./response-types/StandardizedMultipleSelectResponseInput";
 import { StandardizedDateTimeResponseInput } from "./response-types/StandardizedDateTimeResponseInput";
+import { StandardizedPhotoResponseInput } from "./response-types/StandardizedPhotoResponseInput";
+import { StandardizedSignatureResponseInput } from "./response-types/StandardizedSignatureResponseInput";
 import { standardizeResponse, standardizeQuestion } from "@/utils/responseTypeStandardization";
+import { debugResponseFlow, debugTypeMapping } from "@/utils/debugUtils";
 
 interface ResponseInputRendererProps {
   question: any;
@@ -36,15 +39,32 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
 }) => {
   // Padronizar questão e resposta
   const standardQuestion = standardizeQuestion(question);
+  const standardResponse = standardizeResponse(response);
   const responseType = standardQuestion.responseType;
   
-  console.log("ResponseInputRenderer: rendering with responseType:", responseType);
+  // Debug logs detalhados
+  debugTypeMapping(
+    question?.tipo_resposta || 'undefined', 
+    responseType,
+    { questionText: standardQuestion.pergunta }
+  );
+  
+  debugResponseFlow('Input Response', {
+    original: response,
+    standardized: standardResponse
+  });
+
+  // Wrapper para garantir que a resposta seja sempre no formato padronizado
+  const handleResponseChange = (data: any) => {
+    debugResponseFlow('Saving Response', data);
+    onResponseChange(data);
+  };
 
   // Props comuns para todos os componentes padronizados
   const commonProps = {
     question: standardQuestion,
-    response,
-    onResponseChange,
+    response: standardResponse,
+    onResponseChange: handleResponseChange,
     inspectionId,
     actionPlan,
     onSaveActionPlan,
@@ -91,6 +111,14 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
 
   if (responseType === "time") {
     return <StandardizedTimeResponseInput {...commonProps} />;
+  }
+
+  if (responseType === "photo") {
+    return <StandardizedPhotoResponseInput {...commonProps} />;
+  }
+
+  if (responseType === "signature") {
+    return <StandardizedSignatureResponseInput {...commonProps} />;
   }
 
   return (

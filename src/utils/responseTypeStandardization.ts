@@ -1,5 +1,6 @@
 // Padronização de tipos de resposta para garantir consistência
 import { databaseToFrontendResponseType } from "./responseTypeMap";
+import { debugLog } from "./debugUtils";
 
 export interface StandardizedResponse {
   value: any;
@@ -35,8 +36,10 @@ export interface StandardizedQuestion {
  * Padroniza uma resposta para garantir que tenha a estrutura esperada
  */
 export function standardizeResponse(response: any): StandardizedResponse {
+  debugLog("standardizeResponse", "Input", response);
+  
   if (!response) {
-    return {
+    const defaultResponse = {
       value: null,
       mediaUrls: [],
       audioUrls: [],
@@ -46,11 +49,13 @@ export function standardizeResponse(response: any): StandardizedResponse {
       comments: null,
       notes: null
     };
+    debugLog("standardizeResponse", "Default response (null input)", defaultResponse);
+    return defaultResponse;
   }
 
   // Se a resposta é apenas um valor primitivo, envolve na estrutura padrão
   if (typeof response !== 'object' || response === null) {
-    return {
+    const primitiveResponse = {
       value: response,
       mediaUrls: [],
       audioUrls: [],
@@ -60,18 +65,24 @@ export function standardizeResponse(response: any): StandardizedResponse {
       comments: null,
       notes: null
     };
+    debugLog("standardizeResponse", "Primitive response", primitiveResponse);
+    return primitiveResponse;
   }
 
-  return {
-    value: response.value ?? null,
-    mediaUrls: Array.isArray(response.mediaUrls) ? response.mediaUrls : [],
+  const standardizedResponse = {
+    value: response.value ?? response.answer ?? null, // Suporte para 'answer' legado
+    mediaUrls: Array.isArray(response.mediaUrls) ? response.mediaUrls : 
+               Array.isArray(response.media_urls) ? response.media_urls : [], // Suporte para snake_case
     audioUrls: Array.isArray(response.audioUrls) ? response.audioUrls : [],
     fileUrls: Array.isArray(response.fileUrls) ? response.fileUrls : [],
     mediaAnalysisResults: response.mediaAnalysisResults || {},
-    actionPlan: response.actionPlan || null,
+    actionPlan: response.actionPlan || response.action_plan || null, // Suporte para snake_case
     comments: response.comments || null,
     notes: response.notes || null
   };
+  
+  debugLog("standardizeResponse", "Standardized response", standardizedResponse);
+  return standardizedResponse;
 }
 
 /**

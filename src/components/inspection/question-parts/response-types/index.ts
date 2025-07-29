@@ -14,6 +14,8 @@ export * from './StandardizedDropdownResponseInput';
 export * from './StandardizedMultipleChoiceResponseInput';
 export * from './StandardizedMultipleSelectResponseInput';
 export * from './StandardizedDateTimeResponseInput';
+export * from './StandardizedPhotoResponseInput';
+export * from './StandardizedSignatureResponseInput';
 export * from './base/BaseResponseInput';
 
 // Exportar ActionPlanButton do arquivo correto
