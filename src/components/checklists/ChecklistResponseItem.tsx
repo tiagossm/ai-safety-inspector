@@ -225,9 +225,12 @@ export function ChecklistResponseItem({ item, onResponseChange, index }: Checkli
                   <Info className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent aria-describedby="instructions-description">
                 <DialogHeader>
                   <DialogTitle>Instruções</DialogTitle>
+                  <div id="instructions-description" className="sr-only">
+                    Instruções e dicas para responder esta pergunta do checklist
+                  </div>
                 </DialogHeader>
                 <p className="text-sm">{item.hint}</p>
               </DialogContent>
@@ -245,9 +248,12 @@ export function ChecklistResponseItem({ item, onResponseChange, index }: Checkli
                 <span>Comentar</span>
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent aria-describedby="comment-description">
               <DialogHeader>
                 <DialogTitle>Adicionar Comentário</DialogTitle>
+                <div id="comment-description" className="sr-only">
+                  Formulário para adicionar comentários ao item do checklist
+                </div>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
@@ -281,9 +287,12 @@ export function ChecklistResponseItem({ item, onResponseChange, index }: Checkli
                 <span>Foto</span>
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent aria-describedby="media-description">
               <DialogHeader>
                 <DialogTitle>Adicionar Mídia</DialogTitle>
+                <div id="media-description" className="sr-only">
+                  Interface para capturar ou enviar arquivos de mídia (foto, vídeo, áudio)
+                </div>
               </DialogHeader>
               <div className="space-y-4">
                 <div>

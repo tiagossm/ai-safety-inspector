@@ -67,7 +67,7 @@ export function useSequentialMediaAnalysis() {
 
         // Adicionar delay entre análises para evitar rate limit
         if (i < mediaUrls.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1500));
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
 
       } catch (error: any) {

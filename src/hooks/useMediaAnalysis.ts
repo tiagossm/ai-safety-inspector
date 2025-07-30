@@ -31,6 +31,10 @@ export function useMediaAnalysis() {
 
   // Debounce para evitar requests duplicados
   const debounceTimeouts = new Map<string, NodeJS.Timeout>();
+  
+  // Timeouts para análises em progresso
+  const analysisTimeouts = new Map<string, NodeJS.Timeout>();
+  const ANALYSIS_TIMEOUT = 45000; // 45 segundos
 
   const analyze = useCallback(async (options: MediaAnalysisOptions & { forceRetry?: boolean }): Promise<any | null> => {
     const { mediaUrl, questionText, userAnswer, multimodalAnalysis, additionalMediaUrls, mediaType, forceRetry = false } = options;
@@ -75,6 +79,22 @@ export function useMediaAnalysis() {
 
         setRequestQueue(prev => new Set([...prev, requestKey]));
         setAnalyzing(true);
+        
+        // Configurar timeout para a análise
+        const timeoutId = setTimeout(() => {
+          console.log(`Timeout de análise atingido para: ${requestKey}`);
+          setFailedRequests(prev => new Set([...prev, requestKey]));
+          setRequestQueue(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(requestKey);
+            return newSet;
+          });
+          setAnalyzing(false);
+          toast.error("Análise expirou. Tente novamente.");
+          resolve(null);
+        }, ANALYSIS_TIMEOUT);
+        
+        analysisTimeouts.set(requestKey, timeoutId);
         
         try {
           // Determinar o tipo de mídia
@@ -134,6 +154,12 @@ export function useMediaAnalysis() {
                 userAnswer
               };
               
+              // Limpar timeout se a análise foi bem-sucedida
+              if (analysisTimeouts.has(requestKey)) {
+                clearTimeout(analysisTimeouts.get(requestKey)!);
+                analysisTimeouts.delete(requestKey);
+              }
+              
               resolve(result);
               return;
               
@@ -165,6 +191,12 @@ export function useMediaAnalysis() {
           setFailedRequests(prev => new Set([...prev, requestKey]));
           resolve(null);
         } finally {
+          // Limpar timeout da análise
+          if (analysisTimeouts.has(requestKey)) {
+            clearTimeout(analysisTimeouts.get(requestKey)!);
+            analysisTimeouts.delete(requestKey);
+          }
+          
           setAnalyzing(false);
           setRequestQueue(prev => {
             const newSet = new Set(prev);

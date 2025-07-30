@@ -111,9 +111,12 @@ export function ActionPlan5W2HDialog({
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-3xl" aria-describedby="action-plan-description">
         <DialogHeader>
           <DialogTitle>Plano de Ação 5W2H</DialogTitle>
+          <div id="action-plan-description" className="sr-only">
+            Formulário para criação e edição de planos de ação usando a metodologia 5W2H
+          </div>
         </DialogHeader>
         
         <Form {...form}>
