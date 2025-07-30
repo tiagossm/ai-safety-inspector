@@ -27,12 +27,13 @@ export interface MediaAnalysisOptions {
 export function useMediaAnalysis() {
   const [analyzing, setAnalyzing] = useState(false);
   const [requestQueue, setRequestQueue] = useState<Set<string>>(new Set());
+  const [failedRequests, setFailedRequests] = useState<Set<string>>(new Set());
 
   // Debounce para evitar requests duplicados
   const debounceTimeouts = new Map<string, NodeJS.Timeout>();
 
-  const analyze = useCallback(async (options: MediaAnalysisOptions): Promise<any | null> => {
-    const { mediaUrl, questionText, userAnswer, multimodalAnalysis, additionalMediaUrls, mediaType } = options;
+  const analyze = useCallback(async (options: MediaAnalysisOptions & { forceRetry?: boolean }): Promise<any | null> => {
+    const { mediaUrl, questionText, userAnswer, multimodalAnalysis, additionalMediaUrls, mediaType, forceRetry = false } = options;
     
     if (!mediaUrl) {
       toast.error("URL de mídia inválida para análise");
@@ -43,9 +44,18 @@ export function useMediaAnalysis() {
     const requestKey = `${mediaUrl}-${questionText}-${userAnswer}`;
     
     // Verificar se já há uma requisição em andamento
-    if (requestQueue.has(requestKey)) {
+    if (requestQueue.has(requestKey) && !forceRetry) {
       console.log("Requisição já em andamento para esta mídia, ignorando...");
       return null;
+    }
+    
+    // Se forceRetry for true, limpar falhas anteriores
+    if (forceRetry) {
+      setFailedRequests(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(requestKey);
+        return newSet;
+      });
     }
 
     // Cancelar timeout anterior se existir
@@ -140,6 +150,8 @@ export function useMediaAnalysis() {
                   toast.error(`Erro durante análise: ${error.message || "Erro desconhecido"}`);
                 }
                 
+                // Marcar como falha para permitir retry
+                setFailedRequests(prev => new Set([...prev, requestKey]));
                 resolve(null);
                 return;
               }
@@ -149,6 +161,8 @@ export function useMediaAnalysis() {
         } catch (error: any) {
           console.error("Erro durante análise de mídia:", error);
           toast.error(`Erro durante análise: ${error.message || "Erro desconhecido"}`);
+          // Marcar como falha para permitir retry
+          setFailedRequests(prev => new Set([...prev, requestKey]));
           resolve(null);
         } finally {
           setAnalyzing(false);
@@ -205,8 +219,21 @@ export function useMediaAnalysis() {
     return formatted.trim();
   };
 
+  // Função para verificar se uma requisição falhou
+  const canRetry = useCallback((mediaUrl: string, questionText: string, userAnswer?: string) => {
+    const requestKey = `${mediaUrl}-${questionText}-${userAnswer}`;
+    return failedRequests.has(requestKey);
+  }, [failedRequests]);
+
+  // Função para forçar retry
+  const retryAnalysis = useCallback((options: MediaAnalysisOptions) => {
+    return analyze({ ...options, forceRetry: true });
+  }, [analyze]);
+
   return {
     analyze,
-    analyzing
+    analyzing,
+    canRetry,
+    retryAnalysis
   };
 }

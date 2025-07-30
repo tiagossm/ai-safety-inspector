@@ -9,7 +9,7 @@ export interface SequentialAnalysisState {
 }
 
 export function useSequentialMediaAnalysis() {
-  const { analyze, analyzing } = useMediaAnalysis();
+  const { analyze, analyzing, canRetry, retryAnalysis } = useMediaAnalysis();
   const [state, setState] = useState<SequentialAnalysisState>({
     pending: [],
     processing: null,
@@ -98,7 +98,8 @@ export function useSequentialMediaAnalysis() {
         userAnswer
       };
 
-      const result = await analyze(options);
+      // Usar retryAnalysis para forçar nova tentativa
+      const result = await retryAnalysis(options);
       
       if (result) {
         setState(prev => ({
@@ -109,7 +110,7 @@ export function useSequentialMediaAnalysis() {
       } else {
         setState(prev => ({
           ...prev,
-          failed: new Map(prev.failed).set(mediaUrl, "Falha na análise"),
+          failed: new Map(prev.failed).set(mediaUrl, "Falha na nova tentativa"),
           processing: null
         }));
       }
@@ -120,7 +121,11 @@ export function useSequentialMediaAnalysis() {
         processing: null
       }));
     }
-  }, [analyze]);
+  }, [retryAnalysis]);
+
+  const canRetryMedia = useCallback((mediaUrl: string, questionText: string, userAnswer?: string) => {
+    return canRetry(mediaUrl, questionText, userAnswer) || state.failed.has(mediaUrl);
+  }, [canRetry, state.failed]);
 
   const resetAnalysis = useCallback(() => {
     setState({
@@ -141,6 +146,7 @@ export function useSequentialMediaAnalysis() {
     analyzeSequentially,
     retryFailedAnalysis,
     resetAnalysis,
+    canRetryMedia,
     isComplete,
     hasResults,
     hasErrors,

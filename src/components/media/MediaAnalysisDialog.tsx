@@ -111,6 +111,7 @@ export function MediaAnalysisDialog({
     analyzeSequentially, 
     retryFailedAnalysis, 
     resetAnalysis,
+    canRetryMedia,
     isAnalyzing 
   } = useSequentialMediaAnalysis();
 
@@ -137,11 +138,17 @@ export function MediaAnalysisDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
+      <DialogContent 
+        className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto" 
+        aria-describedby="media-analysis-description"
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center">
             Análise Individualizada das Imagens
           </DialogTitle>
+          <div id="media-analysis-description" className="sr-only">
+            Diálogo para análise individual de múltiplas imagens usando inteligência artificial
+          </div>
         </DialogHeader>
 
         {showMaxWarning && (
@@ -237,7 +244,13 @@ export function MediaAnalysisDialog({
                         <AlertCircle className="h-3 w-3 mr-1" />
                         {errorMessage}
                       </div>
-                      <Button size="sm" variant="secondary" onClick={() => handleRetry(url)} className="flex items-center">
+                      <Button 
+                        size="sm" 
+                        variant="secondary" 
+                        onClick={() => handleRetry(url)} 
+                        className="flex items-center"
+                        disabled={!canRetryMedia(url, questionText, userAnswer)}
+                      >
                         <RefreshCw className="h-3 w-3 mr-1" />
                         Tentar novamente
                       </Button>

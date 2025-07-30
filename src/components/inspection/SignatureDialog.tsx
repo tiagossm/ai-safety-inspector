@@ -75,10 +75,13 @@ export function SignatureDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent 
+        className="sm:max-w-[500px]" 
+        aria-describedby="signature-dialog-description"
+      >
         <DialogHeader>
           <DialogTitle>Adicionar sua Assinatura</DialogTitle>
-          <DialogDescription>
+          <DialogDescription id="signature-dialog-description">
             Assine o documento de inspeção usando seu mouse ou tela sensível ao toque.
           </DialogDescription>
         </DialogHeader>

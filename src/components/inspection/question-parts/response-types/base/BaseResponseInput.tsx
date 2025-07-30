@@ -6,6 +6,7 @@ import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 import { ActionPlan5W2HDialog } from "@/components/action-plans/ActionPlan5W2HDialog";
 import { ResponseWrapper } from "../components/ResponseWrapper";
 import { standardizeQuestion, standardizeResponse } from "@/utils/responseTypeStandardization";
+import { useMediaAnalysis } from "@/hooks/useMediaAnalysis";
 
 interface BaseResponseInputProps {
   question: any;
@@ -44,6 +45,9 @@ export function BaseResponseInput({
   const [mediaAnalysisResults, setMediaAnalysisResults] = useState<Record<string, any>>(
     response?.mediaAnalysisResults || {}
   );
+
+  // Hook para análise de mídia com retry
+  const { analyzing, canRetry } = useMediaAnalysis();
 
   // Padronizar questão e resposta
   const standardQuestion = standardizeQuestion(question);
@@ -125,7 +129,11 @@ export function BaseResponseInput({
               />
             )}
             {showMediaAnalysis && hasMediaSupport && (
-              <MediaAnalysisButton onOpenAnalysis={handleOpenAnalysis} />
+              <MediaAnalysisButton 
+                onOpenAnalysis={handleOpenAnalysis}
+                analyzing={analyzing}
+                canRetry={mediaUrls.length > 0 && canRetry(mediaUrls[0], standardQuestion.pergunta, userAnswer)}
+              />
             )}
           </div>
         )}
