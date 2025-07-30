@@ -5,6 +5,7 @@ import App from './App';
 import './index.css';
 import { initOfflineSystem } from './services/offlineSync';
 import { initOfflineDb } from './services/offlineDb';
+import { devServerService } from './services/devServerService';
 import { toast } from 'sonner';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -113,6 +114,20 @@ try {
   console.error("Failed to initialize offline system:", error);
   toast.error("Falha ao inicializar o sistema offline. A aplicação pode não funcionar corretamente.");
 }
+
+// Initialize dev server service to handle CORS and connectivity issues
+devServerService.initialize()
+  .then(success => {
+    if (success) {
+      console.log('✅ Dev Server Service inicializado com sucesso');
+    } else {
+      console.warn('⚠️ Dev Server Service inicializado mas endpoints podem estar indisponíveis');
+    }
+  })
+  .catch(error => {
+    console.error('Erro ao inicializar Dev Server Service:', error);
+    // Não mostra toast para o usuário pois é uma funcionalidade interna
+  });
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

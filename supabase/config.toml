@@ -43,3 +43,6 @@ backend = "postgres"
 
 [functions.analyze-media]
 verify_jwt = true
+
+[functions.dev-server]
+verify_jwt = false
