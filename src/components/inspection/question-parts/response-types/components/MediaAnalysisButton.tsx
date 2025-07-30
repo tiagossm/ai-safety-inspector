@@ -1,11 +1,12 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Search, RotateCcw, AlertTriangle, RefreshCw } from "lucide-react";
+import { Search, RotateCcw, AlertTriangle, RefreshCw, X } from "lucide-react";
 
 interface MediaAnalysisButtonProps {
   onOpenAnalysis: () => void;
   onForceRetry?: () => void;
+  onCancelAnalysis?: () => void;
   canRetry?: boolean;
   analyzing?: boolean;
   analysisStatus?: {
@@ -18,6 +19,7 @@ interface MediaAnalysisButtonProps {
 export function MediaAnalysisButton({ 
   onOpenAnalysis, 
   onForceRetry,
+  onCancelAnalysis,
   canRetry = false, 
   analyzing = false,
   analysisStatus 
@@ -47,23 +49,38 @@ export function MediaAnalysisButton({
 
   return (
     <div className="flex flex-col gap-2 mb-4">
-      <Button
-        variant={getButtonVariant()}
-        size="sm"
-        onClick={onOpenAnalysis}
-        disabled={analyzing}
-        className={`${
-          hasFailures 
-            ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-100" 
-            : analyzing
-            ? "bg-gray-50 text-gray-700 border-gray-200"
-            : "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
-        } disabled:opacity-50`}
-        type="button"
-      >
-        {getButtonIcon()}
-        {getButtonText()}
-      </Button>
+      <div className="flex gap-2">
+        <Button
+          variant={getButtonVariant()}
+          size="sm"
+          onClick={onOpenAnalysis}
+          disabled={analyzing}
+          className={`flex-1 ${
+            hasFailures 
+              ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-100" 
+              : analyzing
+              ? "bg-gray-50 text-gray-700 border-gray-200"
+              : "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+          } disabled:opacity-50`}
+          type="button"
+        >
+          {getButtonIcon()}
+          {getButtonText()}
+        </Button>
+        
+        {/* Botão de cancelar quando analisando */}
+        {analyzing && onCancelAnalysis && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onCancelAnalysis}
+            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+            type="button"
+          >
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        )}
+      </div>
       
       {/* Botão de força re-análise se houver falhas e callback */}
       {hasFailures && onForceRetry && (

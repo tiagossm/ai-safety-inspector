@@ -9,7 +9,7 @@ export interface SequentialAnalysisState {
 }
 
 export function useSequentialMediaAnalysis() {
-  const { analyze, analyzing, canRetry, retryAnalysis, cancelAllAnalysis, getAnalysisStatus } = useMediaAnalysis();
+  const { analyze, analyzing, canRetry, retryAnalysis, cancelAllAnalysis, getAnalysisStatus, resetAllState } = useMediaAnalysis();
   const [state, setState] = useState<SequentialAnalysisState>({
     pending: [],
     processing: null,
@@ -134,12 +134,24 @@ export function useSequentialMediaAnalysis() {
       completed: new Map(),
       failed: new Map()
     });
-  }, []);
+    // Também resetar o estado do hook base
+    resetAllState();
+  }, [resetAllState]);
 
   const isComplete = state.pending.length === 0 && !state.processing;
   const hasResults = state.completed.size > 0;
   const hasErrors = state.failed.size > 0;
   const totalProcessed = state.completed.size + state.failed.size;
+
+  const cancelAndReset = useCallback(() => {
+    cancelAllAnalysis();
+    setState({
+      pending: [],
+      processing: null,
+      completed: new Map(),
+      failed: new Map()
+    });
+  }, [cancelAllAnalysis]);
 
   return {
     state,
@@ -147,7 +159,7 @@ export function useSequentialMediaAnalysis() {
     retryFailedAnalysis,
     resetAnalysis,
     canRetryMedia,
-    cancelAllAnalysis,
+    cancelAllAnalysis: cancelAndReset,
     getAnalysisStatus,
     isComplete,
     hasResults,

@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 
@@ -32,24 +32,59 @@ export function useMediaAnalysis() {
   const [requestQueue, setRequestQueue] = useState<Set<string>>(new Set());
   const [failedRequests, setFailedRequests] = useState<Set<string>>(new Set());
   const [abortControllers, setAbortControllers] = useState<Map<string, AbortController>>(new Map());
+  
+  // Refs para evitar dependências circulares
+  const requestQueueRef = useRef<Set<string>>(new Set());
+  const analyzingRef = useRef(false);
+  const lastActivityRef = useRef(Date.now());
 
   // Timeout mais agressivo (30 segundos)
   const REQUEST_TIMEOUT = 30000;
   const MAX_RETRIES = 2;
+  const STATE_CLEANUP_INTERVAL = 60000; // 1 minuto
 
   const generateRequestKey = useCallback((mediaUrl: string, questionText: string, userAnswer?: string) => {
     return `${mediaUrl}|${questionText}|${userAnswer || ''}`;
   }, []);
 
+  // Sincronizar refs com estado
+  useEffect(() => {
+    requestQueueRef.current = requestQueue;
+  }, [requestQueue]);
+
+  useEffect(() => {
+    analyzingRef.current = analyzing;
+  }, [analyzing]);
+
+  // Verificação periódica de integridade do estado
+  useEffect(() => {
+    const checkStateIntegrity = () => {
+      const now = Date.now();
+      const timeSinceLastActivity = now - lastActivityRef.current;
+      
+      // Se não há atividade há muito tempo e ainda está analisando
+      if (timeSinceLastActivity > STATE_CLEANUP_INTERVAL && analyzingRef.current && requestQueueRef.current.size === 0) {
+        console.warn('🔧 [MediaAnalysis] Estado inconsistente detectado - limpando automaticamente');
+        setAnalyzing(false);
+        setAbortControllers(new Map());
+        setRequestQueue(new Set());
+      }
+    };
+
+    const interval = setInterval(checkStateIntegrity, STATE_CLEANUP_INTERVAL);
+    return () => clearInterval(interval);
+  }, []);
+
   const logAnalysisAttempt = useCallback((requestKey: string, attempt: number, action: string) => {
+    lastActivityRef.current = Date.now();
     console.log(`🔍 [MediaAnalysis] ${action}:`, {
       requestKey: requestKey.substring(0, 50) + '...',
       attempt,
       timestamp: new Date().toISOString(),
-      queueSize: requestQueue.size,
-      analyzing
+      queueSize: requestQueueRef.current.size,
+      analyzing: analyzingRef.current
     });
-  }, [requestQueue.size, analyzing]);
+  }, []);
 
   const analyze = useCallback(async (options: MediaAnalysisOptions & { forceRetry?: boolean }): Promise<MediaAnalysisResult | null> => {
     const { mediaUrl, questionText, userAnswer, forceRetry = false } = options;
@@ -176,10 +211,15 @@ export function useMediaAnalysis() {
       return null;
 
     } finally {
-      // Cleanup
+      // Cleanup com verificação síncrona
       setRequestQueue(prev => {
         const newSet = new Set(prev);
         newSet.delete(requestKey);
+        const newSize = newSet.size;
+        
+        // Atualizar analyzing baseado no novo tamanho da fila
+        setAnalyzing(newSize > 0);
+        
         return newSet;
       });
       
@@ -189,7 +229,7 @@ export function useMediaAnalysis() {
         return newMap;
       });
       
-      setAnalyzing(prev => prev && requestQueue.size > 1);
+      lastActivityRef.current = Date.now();
     }
   }, [generateRequestKey, logAnalysisAttempt, requestQueue, failedRequests, abortControllers]);
 
@@ -266,10 +306,18 @@ export function useMediaAnalysis() {
       logAnalysisAttempt(key, 0, 'CANCELLED_BY_USER');
     });
     
-    // Limpar estado
+    // Limpar estado de forma forçada
     setAbortControllers(new Map());
     setRequestQueue(new Set());
     setAnalyzing(false);
+    setFailedRequests(new Set());
+    
+    // Atualizar refs também
+    requestQueueRef.current = new Set();
+    analyzingRef.current = false;
+    lastActivityRef.current = Date.now();
+    
+    toast.info("Todas as análises foram canceladas");
   }, [abortControllers, logAnalysisAttempt]);
 
   const getAnalysisStatus = useCallback(() => {
@@ -281,12 +329,26 @@ export function useMediaAnalysis() {
     };
   }, [analyzing, requestQueue.size, failedRequests.size]);
 
+  // Função para reset completo do estado
+  const resetAllState = useCallback(() => {
+    console.log('🔄 [MediaAnalysis] Reset completo do estado');
+    setAnalyzing(false);
+    setRequestQueue(new Set());
+    setFailedRequests(new Set());
+    setAbortControllers(new Map());
+    requestQueueRef.current = new Set();
+    analyzingRef.current = false;
+    lastActivityRef.current = Date.now();
+    toast.info("Estado da análise foi resetado");
+  }, []);
+
   return {
     analyze,
     analyzing,
     canRetry,
     retryAnalysis,
     cancelAllAnalysis,
-    getAnalysisStatus
+    getAnalysisStatus,
+    resetAllState
   };
 }
