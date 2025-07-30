@@ -46,8 +46,8 @@ export function BaseResponseInput({
     response?.mediaAnalysisResults || {}
   );
 
-  // Hook para análise de mídia com retry
-  const { analyzing, canRetry, cancelAllAnalysis, getAnalysisStatus } = useMediaAnalysis();
+  // Hook para análise de mídia com retry e circuit breaker
+  const { analyzing, canRetry, cancelAllAnalysis, getAnalysisStatus, resetAllState, getDebugInfo } = useMediaAnalysis();
 
   // Padronizar questão e resposta
   const standardQuestion = standardizeQuestion(question);
@@ -132,6 +132,7 @@ export function BaseResponseInput({
               <MediaAnalysisButton 
                 onOpenAnalysis={handleOpenAnalysis}
                 onCancelAnalysis={cancelAllAnalysis}
+                onResetState={resetAllState}
                 analyzing={analyzing}
                 canRetry={mediaUrls.length > 0 && canRetry(mediaUrls[0], standardQuestion.pergunta, userAnswer)}
                 analysisStatus={getAnalysisStatus()}

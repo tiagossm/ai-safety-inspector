@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useMediaAnalysis, MediaAnalysisResult, MediaAnalysisOptions } from "./useMediaAnalysis";
 
 export interface SequentialAnalysisState {
@@ -9,13 +9,16 @@ export interface SequentialAnalysisState {
 }
 
 export function useSequentialMediaAnalysis() {
-  const { analyze, analyzing, canRetry, retryAnalysis, cancelAllAnalysis, getAnalysisStatus, resetAllState } = useMediaAnalysis();
+  const { analyze, analyzing, canRetry, retryAnalysis, cancelAllAnalysis, getAnalysisStatus, resetAllState, getDebugInfo } = useMediaAnalysis();
   const [state, setState] = useState<SequentialAnalysisState>({
     pending: [],
     processing: null,
     completed: new Map(),
     failed: new Map()
   });
+
+  // Ref para evitar loops infinitos
+  const processingRef = useRef(false);
 
   const analyzeSequentially = useCallback(async (
     mediaUrls: string[],
