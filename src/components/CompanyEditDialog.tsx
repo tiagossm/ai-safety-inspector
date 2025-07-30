@@ -121,9 +121,12 @@ export function CompanyEditDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent aria-describedby="company-edit-description">
         <DialogHeader>
           <DialogTitle>Editar Empresa</DialogTitle>
+          <div id="company-edit-description" className="sr-only">
+            Formulário para editar as informações da empresa
+          </div>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">

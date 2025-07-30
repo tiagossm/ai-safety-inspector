@@ -114,9 +114,12 @@ export function CreateChecklistModal({
   
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px]" aria-describedby="create-checklist-description">
         <DialogHeader>
           <DialogTitle>Criar Novo Checklist</DialogTitle>
+          <div id="create-checklist-description" className="sr-only">
+            Formulário para criar um novo checklist de inspeção
+          </div>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
