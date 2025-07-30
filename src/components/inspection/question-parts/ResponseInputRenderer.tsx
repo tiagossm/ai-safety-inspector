@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useState } from "react";
 import { StandardizedYesNoResponseInput } from "./response-types/StandardizedYesNoResponseInput";
 import { StandardizedTextResponseInput } from "./response-types/StandardizedTextResponseInput";
 import { StandardizedDateResponseInput } from "./response-types/StandardizedDateResponseInput";
@@ -58,6 +58,31 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   const handleResponseChange = (data: any) => {
     debugResponseFlow('Saving Response', data);
     onResponseChange(data);
+  };
+
+  // Estado para controlar timeout da análise
+  const [analysisTimeout, setAnalysisTimeout] = useState(false);
+  const analysisTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Função para iniciar análise com timeout
+  const startMediaAnalysis = (mediaUrl: string, analyzeFn: (url: string) => Promise<any>) => {
+    setAnalysisTimeout(false);
+    if (analysisTimerRef.current) clearTimeout(analysisTimerRef.current);
+
+    analysisTimerRef.current = setTimeout(() => {
+      setAnalysisTimeout(true);
+      // Aqui pode disparar um toast ou mostrar botão de reiniciar
+    }, 60000); // 60 segundos de timeout
+
+    analyzeFn(mediaUrl).finally(() => {
+      if (analysisTimerRef.current) clearTimeout(analysisTimerRef.current);
+      setAnalysisTimeout(false);
+    });
+  };
+
+  // Botão para reiniciar análise manualmente
+  const handleRetryAnalysis = (mediaUrl: string, analyzeFn: (url: string) => Promise<any>) => {
+    startMediaAnalysis(mediaUrl, analyzeFn);
   };
 
   // Props comuns para todos os componentes padronizados

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { 
   Dialog, 
@@ -81,7 +80,7 @@ export function ReportGenerationDialog({
         <DialogTrigger asChild>
           {trigger}
         </DialogTrigger>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" aria-describedby="report-dialog-description">
           {renderDialogContent()}
         </DialogContent>
       </Dialog>
@@ -91,7 +90,7 @@ export function ReportGenerationDialog({
   // Otherwise use controlled dialog
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md" aria-describedby="report-dialog-description">
         {renderDialogContent()}
       </DialogContent>
     </Dialog>
@@ -102,7 +101,7 @@ export function ReportGenerationDialog({
       <>
         <DialogHeader>
           <DialogTitle>Gerar Relatório</DialogTitle>
-          <DialogDescription>
+          <DialogDescription id="report-dialog-description">
             Selecione as opções para gerar o relatório da inspeção
             {displayChecklistTitle && <span className="font-medium block mt-1">{displayChecklistTitle}</span>}
             {displayCompanyName && <span className="text-muted-foreground">{displayCompanyName}</span>}
@@ -202,4 +201,5 @@ export function ReportGenerationDialog({
       </>
     );
   }
+}
 }
