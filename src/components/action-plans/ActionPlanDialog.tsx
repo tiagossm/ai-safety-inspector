@@ -123,7 +123,7 @@ export function ActionPlanDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px]" aria-describedby="action-plan-dialog-description">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>{existingPlan ? "Editar Plano de Ação" : "Criar Plano de Ação"}</DialogTitle>

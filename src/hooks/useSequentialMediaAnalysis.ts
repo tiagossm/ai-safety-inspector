@@ -9,7 +9,7 @@ export interface SequentialAnalysisState {
 }
 
 export function useSequentialMediaAnalysis() {
-  const { analyze, analyzing, canRetry, retryAnalysis } = useMediaAnalysis();
+  const { analyze, analyzing, canRetry, retryAnalysis, cancelAllAnalysis, getAnalysisStatus } = useMediaAnalysis();
   const [state, setState] = useState<SequentialAnalysisState>({
     pending: [],
     processing: null,
@@ -147,6 +147,8 @@ export function useSequentialMediaAnalysis() {
     retryFailedAnalysis,
     resetAnalysis,
     canRetryMedia,
+    cancelAllAnalysis,
+    getAnalysisStatus,
     isComplete,
     hasResults,
     hasErrors,
